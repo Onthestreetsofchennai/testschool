@@ -2,6 +2,7 @@ const STORAGE_KEY = "musicSchoolOTSStateV1";
 const STUDENT_TOKEN_KEY = "otsStudentToken";
 const WELCOME_SEEN_PREFIX = "otsWelcomeSeen:";
 const API_ORIGIN = "https://music-school-ots.sharoncornerstone56.workers.dev";
+const MIN_SUBMIT_PRACTICE_SECONDS = 60;
 
 const courseWeeks = [
   {
@@ -122,6 +123,7 @@ const defaultState = {
     activePeriod: null,
     missingPeriods: [],
     minDurationSeconds: 420,
+    minSubmitSeconds: MIN_SUBMIT_PRACTICE_SECONDS,
     message: ""
   },
   coursePlan: {
@@ -332,7 +334,8 @@ async function syncStudentFromBackend() {
           id: submission.id,
           status: submission.review_status === "reviewed" ? "reviewed" : "submitted",
           fileName: submission.file_name,
-          time: new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date(submission.uploaded_at))
+          time: new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date(submission.uploaded_at)),
+          durationSeconds: Number(submission.duration_seconds || 0)
         };
       }
     }
@@ -395,6 +398,23 @@ function formatToday() {
     day: "numeric",
     month: "long"
   }).format(new Date()).toUpperCase();
+}
+
+function formatPracticeDuration(seconds) {
+  const safeSeconds = Math.max(0, Math.round(Number(seconds) || 0));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remaining = safeSeconds % 60;
+  if (minutes && remaining) return `${minutes}m ${remaining}s`;
+  if (minutes) return `${minutes} min`;
+  return `${remaining}s`;
+}
+
+function practiceDurationNote(durationSeconds, targetSeconds) {
+  const duration = Math.round(Number(durationSeconds) || 0);
+  const target = Math.round(Number(targetSeconds) || 420);
+  if (!duration || duration >= target) return "";
+  const targetMinutes = Math.max(1, Math.round(target / 60));
+  return `Short practice accepted: ${formatPracticeDuration(duration)} uploaded. Aim for ${targetMinutes} mins for full progress points.`;
 }
 
 function showToast(message) {
@@ -563,7 +583,7 @@ function renderGamification() {
 
   document.querySelector("#welcome-quest-title").textContent = `${firstName}, your guitar journey has started.`;
   document.querySelector("#welcome-quest-copy").textContent = state.practiceGate.locked
-    ? `Finish the required ${practiceMinutes}-minute practice pod to open today's riff gate.`
+    ? `Submit a practice pod to open today's riff gate. Aim for ${practiceMinutes} mins for full progress points.`
     : "Performer path unlocked. Tiny practice, repeated daily, becomes stage confidence.";
 
   [
@@ -739,16 +759,16 @@ function renderCourse() {
 
 function renderCheckins() {
   const practiceMinutes = Number(state.coursePlan?.practiceMinutes || Math.round(state.practiceGate.minDurationSeconds / 60) || 7);
+  const targetSeconds = Math.max(60, Math.round(practiceMinutes * 60));
   const requiredPeriods = [
     state.coursePlan?.morningRequired ? "morning" : null,
     state.coursePlan?.eveningRequired ? "evening" : null
   ].filter(Boolean);
-  const totalMinutes = practiceMinutes * requiredPeriods.length;
   document.querySelector("#practice-plan-title").textContent = requiredPeriods.length
-    ? `${requiredPeriods.length === 2 ? "Two videos" : "One video"}. ${totalMinutes} focused minutes.`
+    ? `${requiredPeriods.length === 2 ? "Two videos" : "One video"}. ${practiceMinutes} mins of focus.`
     : "Your teacher has not assigned a daily upload.";
   document.querySelector("#practice-plan-description").textContent = requiredPeriods.length
-    ? `Upload ${requiredPeriods.join(" and ")} practice for at least ${practiceMinutes} minutes. Your teacher reviews each submission.`
+    ? `Aim for ${practiceMinutes} mins. Even a 1-minute practice can be submitted for review and earns partial progress points.`
     : "You can continue with your course and live sessions.";
 
   ["morning", "evening"].forEach((period) => {
@@ -759,7 +779,7 @@ function renderCheckins() {
     const removeButton = document.querySelector(`[data-remove-upload="${period}"]`);
     const submitButton = document.querySelector(`[data-submit-upload="${period}"]`);
     document.querySelector(`[data-period="${period}"]`).hidden = !required;
-    document.querySelector(`#${period}-practice-requirement`).textContent = `Minimum ${practiceMinutes}-minute practice`;
+    document.querySelector(`#${period}-practice-requirement`).textContent = `${practiceMinutes}-minute focus goal`;
     removeButton.hidden = checkin.status !== "submitted" || !checkin.id;
     submitButton.hidden = checkin.status !== "selected";
 
@@ -778,17 +798,22 @@ function renderCheckins() {
 
     if (temporaryVideoUrls[period]) {
       const duration = Number(checkin.durationSeconds || 0);
+      const warning = practiceDurationNote(duration, targetSeconds);
       preview.innerHTML = `
         <video controls playsinline src="${temporaryVideoUrls[period]}"></video>
         <strong>${escapeHtml(checkin.fileName || `${period}-practice.webm`)}</strong>
-        <small>${duration ? `${Math.floor(duration / 60)}m ${duration % 60}s selected` : "Video selected"}</small>
+        <small>${duration ? `${formatPracticeDuration(duration)} selected` : "Video selected"}</small>
+        ${warning ? `<small class="practice-duration-warning">${escapeHtml(warning)}</small>` : ""}
       `;
       preview.classList.remove("is-empty");
     } else if (checkin.fileName) {
+      const duration = Number(checkin.durationSeconds || checkin.duration_seconds || 0);
+      const warning = practiceDurationNote(duration, targetSeconds);
       preview.innerHTML = `
         <span class="video-placeholder-icon">▶</span>
         <strong id="${period}-file-label">${escapeHtml(checkin.fileName)}</strong>
         <small id="${period}-upload-time">${checkin.time ? `Uploaded at ${escapeHtml(checkin.time)}` : "Video selected"}</small>
+        ${warning ? `<small class="practice-duration-warning">${escapeHtml(warning)}</small>` : ""}
       `;
       preview.classList.remove("is-empty");
     } else {
@@ -941,9 +966,10 @@ async function acceptPracticeVideo(period, file, knownDurationSeconds = null) {
     return false;
   }
 
-  const minimumSeconds = state.practiceGate.minDurationSeconds || 420;
+  const targetSeconds = state.practiceGate.minDurationSeconds || 420;
+  const minimumSeconds = state.practiceGate.minSubmitSeconds || MIN_SUBMIT_PRACTICE_SECONDS;
   if (durationSeconds < minimumSeconds) {
-    showToast(`Choose a video of at least ${Math.round(minimumSeconds / 60)} minutes.`);
+    showToast("Record or upload at least 1 minute so your teacher has something useful to review.");
     URL.revokeObjectURL(temporaryVideoUrls[period]);
     delete temporaryVideoUrls[period];
     return false;
@@ -958,6 +984,8 @@ async function acceptPracticeVideo(period, file, knownDurationSeconds = null) {
   };
 
   renderCheckins();
+  const warning = practiceDurationNote(durationSeconds, targetSeconds);
+  if (warning) showToast(warning);
   return true;
 }
 
@@ -1087,10 +1115,11 @@ function closePracticeRecorder() {
 async function submitUpload(period) {
   const button = document.querySelector(`[data-submit-upload="${period}"]`);
   button.disabled = true;
+  let backendWarning = "";
   try {
     if (backendConnected) {
       const uploadedVideo = await uploadPracticeVideoIfAvailable(period, selectedPracticeFiles[period]);
-      await apiRequest("/api/student/me/practice-submissions", {
+      const submission = await apiRequest("/api/student/me/practice-submissions", {
         method: "POST",
         body: JSON.stringify({
           period,
@@ -1100,6 +1129,7 @@ async function submitUpload(period) {
           storageMode: uploadedVideo.storageMode || "metadata-only-mvp"
         })
       });
+      backendWarning = submission.warning || "";
     }
 
     const now = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date());
@@ -1112,9 +1142,9 @@ async function submitUpload(period) {
     delete temporaryVideoUrls[period];
     delete selectedPracticeFiles[period];
     await syncStudentFromBackend();
-    showToast(period === "morning"
+    showToast(backendWarning || (period === "morning"
       ? "Morning Ninja unlocked. Course energy is building."
-      : "Evening Finisher unlocked. Strong close today.");
+      : "Evening Finisher unlocked. Strong close today."));
   } catch (error) {
     showToast(error.message);
   } finally {

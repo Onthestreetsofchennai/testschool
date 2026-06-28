@@ -1159,6 +1159,15 @@ p {
   color: #c5cad9;
 }
 
+.video-preview .practice-duration-warning {
+  max-width: 90%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 241, 220, 0.92);
+  color: #8d4500;
+  font-weight: 800;
+}
+
 .is-empty small {
   color: var(--muted);
 }
@@ -2985,6 +2994,137 @@ textarea:focus {
 
 .toggle-row input:checked + .toggle::after {
   background: #ffffff;
+}
+
+/* Final student/admin palette alignment */
+.onboarding {
+  background:
+    radial-gradient(circle at 84% 8%, rgba(98, 87, 158, 0.48), transparent 34%),
+    radial-gradient(circle at 10% 88%, rgba(240, 119, 30, 0.18), transparent 28%),
+    #0d0b1a;
+}
+
+.onboarding-panel.auth-panel {
+  border: 1px solid rgba(244, 240, 255, 0.13);
+  background:
+    radial-gradient(circle at 88% 8%, rgba(245, 119, 161, 0.16), transparent 30%),
+    linear-gradient(145deg, rgba(28, 24, 45, 0.97), rgba(13, 11, 26, 0.98));
+  color: #f4f0ff;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.auth-panel .brand-lockup strong,
+.auth-panel .onboarding-copy h1,
+.auth-panel label {
+  color: #ffffff;
+}
+
+.auth-panel .brand-lockup small,
+.auth-panel .onboarding-copy p:last-child,
+.auth-panel .microcopy {
+  color: rgba(244, 240, 255, 0.72);
+}
+
+.auth-panel .stack-form input,
+.auth-panel #student-login-email,
+.auth-panel #student-login-otp {
+  border: 1px solid rgba(244, 240, 255, 0.18);
+  background: rgba(244, 240, 255, 0.1);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.auth-panel .stack-form input::placeholder,
+.auth-panel #student-login-otp::placeholder {
+  color: rgba(244, 240, 255, 0.52);
+}
+
+.auth-panel .stack-form input:focus,
+.auth-panel #student-login-otp:focus {
+  border-color: #f0771e;
+  box-shadow: 0 0 0 3px rgba(240, 119, 30, 0.22), 0 18px 36px rgba(245, 119, 161, 0.18);
+}
+
+.auth-destination {
+  border: 1px solid rgba(244, 240, 255, 0.12);
+  background: rgba(244, 240, 255, 0.1);
+  color: rgba(244, 240, 255, 0.78);
+}
+
+.auth-destination strong,
+.auth-back {
+  color: #ffd36a;
+}
+
+#student-login-otp {
+  color: #ffffff;
+  caret-color: #f0771e;
+}
+
+.auth-error {
+  border: 1px solid rgba(255, 145, 160, 0.22);
+  background: rgba(255, 145, 160, 0.12);
+  color: #ffb0bd;
+}
+
+.sidebar {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(112, 87, 255, 0.22), transparent 32%),
+    linear-gradient(180deg, rgba(17, 20, 38, 0.98), rgba(13, 11, 26, 0.98));
+}
+
+.side-nav {
+  gap: 10px;
+}
+
+.side-nav .nav-item {
+  min-height: 54px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  color: rgba(248, 244, 255, 0.66);
+  box-shadow: none;
+}
+
+.side-nav .nav-item:hover,
+.side-nav .nav-item:focus-visible {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+}
+
+.side-nav .nav-item.is-active {
+  background: linear-gradient(135deg, rgba(240, 119, 30, 0.98), rgba(245, 119, 161, 0.92));
+  color: white;
+  box-shadow: 0 18px 38px rgba(245, 119, 161, 0.28);
+}
+
+.bottom-nav {
+  background: rgba(13, 11, 26, 0.94);
+  box-shadow: 0 -18px 36px rgba(0, 0, 0, 0.26);
+}
+
+.bottom-nav .nav-item {
+  border: 1px solid rgba(244, 240, 255, 0.1);
+  background: rgba(244, 240, 255, 0.07);
+  color: rgba(244, 240, 255, 0.68);
+  box-shadow: none;
+}
+
+.bottom-nav .nav-item.is-active {
+  background: linear-gradient(135deg, rgba(112, 87, 255, 0.82), rgba(245, 119, 161, 0.72));
+  color: white;
+}
+
+.practice-gate-card {
+  background:
+    radial-gradient(circle at 88% 8%, rgba(245, 119, 161, 0.18), transparent 32%),
+    linear-gradient(145deg, rgba(28, 24, 45, 0.98), rgba(13, 11, 26, 0.98));
+}
+
+.practice-gate-card h1,
+.practice-gate-card > p:not(.eyebrow),
+.practice-gate-card small {
+  color: #f4f0ff;
 }
 
 @media (max-width: 1020px) {

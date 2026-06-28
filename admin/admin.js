@@ -50,20 +50,6 @@ async function api(path, options = {}) {
   return payload;
 }
 
-async function loadBackendHealth() {
-  const statusLine = document.querySelector("#admin-backend-status");
-  if (!statusLine) return;
-  try {
-    const response = await fetch(`${API_ORIGIN}/api/health`);
-    const health = await response.json();
-    const database = health.database === "cloudflare-d1" ? "Cloudflare D1" : health.database || "database";
-    const storage = health.videoStorage === "google-drive" ? "Google Drive active" : "metadata only";
-    statusLine.textContent = `${database} / Video storage: ${storage}`;
-  } catch {
-    statusLine.textContent = "Backend reachable / storage check pending";
-  }
-}
-
 function setLoggedIn(loggedIn) {
   document.querySelector("#admin-login").hidden = loggedIn;
   document.querySelector("#admin-shell").hidden = !loggedIn;
@@ -914,7 +900,7 @@ function bindEvents() {
       localStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
       setLoggedIn(true);
       renderAdminUser();
-      await Promise.all([loadBackendHealth(), loadDashboard()]);
+      await loadDashboard();
     } catch (loginError) {
       error.textContent = loginError.message;
       error.hidden = false;
@@ -1024,7 +1010,7 @@ async function restoreSession() {
     adminUser = result.user;
     setLoggedIn(true);
     renderAdminUser();
-    await Promise.all([loadBackendHealth(), loadDashboard()]);
+    await loadDashboard();
   } catch {
     logout(false);
   }
@@ -1037,7 +1023,6 @@ async function init() {
     month: "long"
   }).format(new Date()).toUpperCase();
   bindEvents();
-  await loadBackendHealth();
   clearLegacyDemoAutofill();
   window.setTimeout(clearLegacyDemoAutofill, 500);
   await restoreSession();
