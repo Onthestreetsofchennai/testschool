@@ -1,0 +1,7 @@
+Upload the CONTENTS of this folder to the GitHub repository root.
+
+Important:
+- Do not upload the folder itself as one nested folder.
+- Select all files here, including .nojekyll and CNAME.
+- Also upload the admin folder.
+- After GitHub finishes, wait for Pages deploy, then hard refresh the site.
