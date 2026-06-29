@@ -1,5 +1,5 @@
 const ADMIN_TOKEN_KEY = "otsAdminToken";
-const API_ORIGIN = "https://music-school-ots.sharoncornerstone56.workers.dev";
+const API_ORIGIN = "";
 
 let adminToken = localStorage.getItem(ADMIN_TOKEN_KEY) || "";
 let adminUser = null;
@@ -824,16 +824,24 @@ async function openReview(button) {
   document.querySelector("#review-modal-subtitle").textContent = `Week ${button.dataset.week} submission`;
   document.querySelector("#review-file-name").textContent = button.dataset.fileName;
   const player = document.querySelector("#review-video-player");
+  const frame = document.querySelector("#review-video-frame");
   const icon = document.querySelector(".review-video-placeholder > span");
   const message = document.querySelector("#review-video-message");
   player.hidden = true;
   player.removeAttribute("src");
+  frame.hidden = true;
+  frame.removeAttribute("src");
   icon.hidden = false;
   message.textContent = "Loading private practice video...";
   document.querySelector("#review-modal").showModal();
   try {
     const access = await api(`/api/reviews/${button.dataset.submissionId}/video-access`);
-    if (access.playbackUrl) {
+    if (access.embedUrl) {
+      frame.src = access.embedUrl;
+      frame.hidden = false;
+      icon.hidden = true;
+      message.textContent = "Google Drive preview is available inside this review.";
+    } else if (access.playbackUrl) {
       player.src = access.playbackUrl;
       player.hidden = false;
       icon.hidden = true;

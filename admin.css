@@ -1175,9 +1175,12 @@ select[multiple] option,
   background: var(--purple);
 }
 
-.review-video-placeholder video {
+.review-video-placeholder video,
+.review-video-frame {
   width: min(420px, 100%);
+  aspect-ratio: 16 / 9;
   max-height: 320px;
+  border: 0;
   border-radius: 16px;
   background: #090b16;
 }
