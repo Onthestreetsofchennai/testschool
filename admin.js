@@ -1,5 +1,10 @@
 const ADMIN_TOKEN_KEY = "otsAdminToken";
-const API_ORIGIN = "https://music-school-ots.sharoncornerstone56.workers.dev";
+const WORKER_API_ORIGIN = "https://music-school-ots.sharoncornerstone56.workers.dev";
+const API_ORIGIN = (() => {
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) return "";
+  return WORKER_API_ORIGIN;
+})();
 
 let adminToken = localStorage.getItem(ADMIN_TOKEN_KEY) || "";
 let adminUser = null;
