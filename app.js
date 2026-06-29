@@ -209,7 +209,12 @@ async function apiRequest(path, options = {}) {
     clearStudentSession();
     setAuthVisible(true);
   }
-  if (!response.ok) throw new Error(payload.error || "The server could not complete this request.");
+  if (!response.ok) {
+    const error = new Error(payload.error || "The server could not complete this request.");
+    error.code = payload.code || "";
+    error.payload = payload;
+    throw error;
+  }
   return payload;
 }
 
@@ -273,12 +278,22 @@ function setAuthStep(step) {
   document.querySelector("#student-otp-form").hidden = step !== "otp";
   document.querySelector("#development-otp").hidden = true;
   document.querySelector("#student-auth-error").hidden = true;
+  document.querySelector("#student-admission-card").hidden = true;
 }
 
 function showAuthError(message) {
   const error = document.querySelector("#student-auth-error");
   error.textContent = message;
   error.hidden = false;
+}
+
+function showAdmissionInvite(email = "") {
+  const card = document.querySelector("#student-admission-card");
+  const applyLink = document.querySelector("#student-apply-whatsapp");
+  const message = `Hi MUSIC SCHOOL OTS, I wanna apply for the music course. My email is ${email || "not added yet"}.`;
+  applyLink.href = `https://wa.me/919841610111?text=${encodeURIComponent(message)}`;
+  card.hidden = false;
+  document.querySelector("#student-auth-error").hidden = true;
 }
 
 function formatBackendDate(value) {
@@ -1234,6 +1249,7 @@ async function requestStudentOtp(event) {
   button.textContent = "Sending code...";
   form.setAttribute("aria-busy", "true");
   document.querySelector("#student-auth-error").hidden = true;
+  document.querySelector("#student-admission-card").hidden = true;
   try {
     const result = await apiRequest("/api/student-auth/request-otp", {
       method: "POST",
@@ -1250,7 +1266,12 @@ async function requestStudentOtp(event) {
     }
     document.querySelector("#student-login-otp").focus();
   } catch (error) {
-    showAuthError(error.message);
+    pendingOtpSessionId = "";
+    if (error.code === "student_not_found") {
+      showAdmissionInvite(pendingLoginEmail);
+    } else {
+      showAuthError(error.message);
+    }
   } finally {
     button.disabled = false;
     button.textContent = originalButtonText;
@@ -1318,6 +1339,10 @@ function bindEvents() {
     pendingOtpSessionId = "";
     document.querySelector("#student-login-otp").value = "";
     setAuthStep("email");
+  });
+  document.querySelector("#student-login-email").addEventListener("input", () => {
+    document.querySelector("#student-auth-error").hidden = true;
+    document.querySelector("#student-admission-card").hidden = true;
   });
 
   document.querySelectorAll("[data-upload-input]").forEach((input) => {
