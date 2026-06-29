@@ -242,15 +242,23 @@ async function uploadPracticeVideoIfAvailable(period, file) {
   if (!config.uploadUrl) {
     return { storageMode: config.storageMode || "metadata-only-mvp", storageKey: "" };
   }
+  if (config.maxFileSizeBytes && file.size > config.maxFileSizeBytes) {
+    throw new Error(`This video is too large for upload. Please record a shorter practice clip under ${config.maxFileSizeMb || 95} MB.`);
+  }
 
-  const response = await fetch(apiEndpoint(config.uploadUrl), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${studentToken}`,
-      "Content-Type": file.type || "video/webm"
-    },
-    body: file
-  });
+  let response;
+  try {
+    response = await fetch(apiEndpoint(config.uploadUrl), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${studentToken}`,
+        "Content-Type": file.type || "video/webm"
+      },
+      body: file
+    });
+  } catch (error) {
+    throw new Error("Video upload could not reach the school server. Please try again with a shorter video or refresh the app once.");
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(payload.error || "The practice video could not be uploaded.");
