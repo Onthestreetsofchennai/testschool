@@ -33,6 +33,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body.admin-modal-open {
+  overflow: hidden;
+}
+
 button,
 input,
 select,
@@ -967,10 +971,12 @@ select[multiple] option,
 .admin-modal {
   width: min(1040px, calc(100% - 30px));
   max-height: calc(100vh - 30px);
+  max-height: calc(100dvh - 30px);
   padding: 0;
   border: 0;
   border-radius: 27px;
   background: transparent;
+  overflow: hidden;
 }
 
 .admin-modal::backdrop {
@@ -981,7 +987,10 @@ select[multiple] option,
 .modal-surface {
   position: relative;
   max-height: calc(100vh - 30px);
+  max-height: calc(100dvh - 30px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: clamp(23px, 4vw, 38px);
   border-radius: 27px;
   background: white;
@@ -1142,6 +1151,22 @@ select[multiple] option,
 
 .review-modal {
   width: min(850px, calc(100% - 30px));
+  height: calc(100vh - 30px);
+  height: calc(100dvh - 30px);
+  max-height: calc(100vh - 30px);
+  max-height: calc(100dvh - 30px);
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: max(34px, calc(env(safe-area-inset-bottom) + 34px));
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .review-form h2 {
@@ -1166,6 +1191,52 @@ select[multiple] option,
   color: white;
 }
 
+.review-form > .admin-button[type="submit"] {
+  position: sticky;
+  z-index: 5;
+  bottom: 0;
+  margin-top: 16px;
+  box-shadow:
+    0 -14px 32px rgba(13, 11, 26, 0.38),
+    0 18px 38px rgba(245, 119, 161, 0.2);
+}
+
+.student-detail-page {
+  display: grid;
+  gap: 22px;
+}
+
+.student-detail-page .student-modal-header {
+  margin-bottom: 0;
+}
+
+.review-page-form {
+  display: block;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible !important;
+  padding-bottom: clamp(26px, 5vw, 46px);
+  overscroll-behavior: auto;
+}
+
+.review-page-form > .admin-button[type="submit"] {
+  position: static;
+  width: min(100%, 560px);
+  margin-top: 20px;
+  box-shadow: 0 18px 38px rgba(245, 119, 161, 0.2);
+}
+
+.review-page-form .review-video-placeholder {
+  align-items: stretch;
+}
+
+.review-page-form .review-video-placeholder video,
+.review-page-form .review-video-frame {
+  width: min(620px, 100%);
+  max-height: 420px;
+}
+
 .review-video-placeholder > span {
   display: grid;
   width: 52px;
@@ -1175,9 +1246,12 @@ select[multiple] option,
   background: var(--purple);
 }
 
-.review-video-placeholder video {
+.review-video-placeholder video,
+.review-video-frame {
   width: min(420px, 100%);
+  aspect-ratio: 16 / 9;
   max-height: 320px;
+  border: 0;
   border-radius: 16px;
   background: #090b16;
 }
@@ -1452,10 +1526,15 @@ body::before {
   color: var(--ink);
 }
 
-.login-card,
-.modal-surface {
+.login-card {
   position: relative;
   overflow: hidden;
+}
+
+.modal-surface {
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .login-card::before,
@@ -1844,5 +1923,44 @@ textarea:focus {
   .login-card,
   .modal-surface {
     border-radius: 26px;
+  }
+
+  .admin-modal {
+    width: calc(100% - 14px);
+    max-height: calc(100dvh - 14px);
+  }
+
+  .review-form:not(.review-page-form) {
+    padding: 18px 14px max(90px, calc(env(safe-area-inset-bottom) + 72px));
+  }
+
+  .review-form h2 {
+    padding-right: 42px;
+    font-size: 1.55rem;
+    line-height: 1.08;
+  }
+
+  .review-video-placeholder {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .review-video-placeholder video,
+  .review-video-frame {
+    width: 100%;
+    max-height: 210px;
+  }
+
+  .skill-rating-grid label {
+    grid-template-columns: 92px minmax(0, 1fr) 24px;
+  }
+
+  .review-form:not(.review-page-form) > .admin-button[type="submit"] {
+    bottom: 8px;
+  }
+
+  .review-page-form {
+    padding: 18px 14px 30px;
   }
 }

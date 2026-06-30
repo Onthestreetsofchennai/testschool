@@ -1,7 +1,12 @@
 const STORAGE_KEY = "musicSchoolOTSStateV1";
 const STUDENT_TOKEN_KEY = "otsStudentToken";
 const WELCOME_SEEN_PREFIX = "otsWelcomeSeen:";
-const API_ORIGIN = "https://music-school-ots.sharoncornerstone56.workers.dev";
+const WORKER_API_ORIGIN = "https://music-school-ots.sharoncornerstone56.workers.dev";
+const API_ORIGIN = (() => {
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) return "";
+  return WORKER_API_ORIGIN;
+})();
 const MIN_SUBMIT_PRACTICE_SECONDS = 60;
 
 const courseWeeks = [
@@ -1152,7 +1157,7 @@ async function submitUpload(period) {
           storageMode: uploadedVideo.storageMode || "metadata-only-mvp"
         })
       });
-      backendWarning = submission.warning || "";
+      backendWarning = uploadedVideo.warning || submission.warning || "";
     }
 
     const now = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date());
@@ -1544,7 +1549,7 @@ async function init() {
   }
 
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
   }
 }
 

@@ -1,5 +1,10 @@
 const ADMIN_TOKEN_KEY = "otsAdminToken";
-const API_ORIGIN = "https://music-school-ots.sharoncornerstone56.workers.dev";
+const WORKER_API_ORIGIN = "https://music-school-ots.sharoncornerstone56.workers.dev";
+const API_ORIGIN = (() => {
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) return "";
+  return WORKER_API_ORIGIN;
+})();
 
 let adminToken = localStorage.getItem(ADMIN_TOKEN_KEY) || "";
 let adminUser = null;
@@ -36,6 +41,24 @@ function showToast(message) {
   toast.classList.add("is-visible");
   window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => toast.classList.remove("is-visible"), 3200);
+}
+
+function updateModalLock() {
+  document.body.classList.toggle("admin-modal-open", Boolean(document.querySelector(".admin-modal[open]")));
+}
+
+function openAdminModal(selector) {
+  const modal = document.querySelector(selector);
+  if (!modal) return;
+  modal.showModal();
+  updateModalLock();
+}
+
+function closeAdminModal(selector) {
+  const modal = document.querySelector(selector);
+  if (!modal) return;
+  modal.close();
+  updateModalLock();
 }
 
 async function api(path, options = {}) {
@@ -89,11 +112,13 @@ async function logout(showMessage = true) {
 }
 
 function navigateAdmin(viewName) {
+  document.body.classList.remove("admin-modal-open");
+  const navView = viewName === "student-detail" ? "students" : viewName === "review-detail" ? "reviews" : viewName;
   document.querySelectorAll(".admin-view").forEach((view) => {
     view.classList.toggle("is-active", view.id === `admin-view-${viewName}`);
   });
   document.querySelectorAll(".admin-nav-item").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.adminView === viewName);
+    button.classList.toggle("is-active", button.dataset.adminView === navView);
   });
   const activeView = document.querySelector(`#admin-view-${viewName}`);
   document.querySelector("#admin-page-title").textContent = activeView?.dataset.title || "OTS Admin";
@@ -244,7 +269,7 @@ async function openCreateStudent() {
   }
   renderEnrollmentTeachers();
   document.querySelector("#create-student-start").value = new Date().toISOString().slice(0, 10);
-  document.querySelector("#create-student-modal").showModal();
+  openAdminModal("#create-student-modal");
 }
 
 function renderEnrollmentTeachers() {
@@ -280,7 +305,7 @@ async function createStudent(event) {
       })
     });
     form.reset();
-    document.querySelector("#create-student-modal").close();
+    closeAdminModal("#create-student-modal");
     await Promise.all([loadStudents(), loadDashboard()]);
     showToast("Student account created. OTP login is ready.");
   } catch (createError) {
@@ -336,7 +361,7 @@ function updateStaffInstrumentField() {
 function openCreateStaff() {
   document.querySelector("#create-staff-error").hidden = true;
   updateStaffInstrumentField();
-  document.querySelector("#create-staff-modal").showModal();
+  openAdminModal("#create-staff-modal");
 }
 
 async function createStaff(event) {
@@ -360,7 +385,7 @@ async function createStaff(event) {
     });
     form.reset();
     updateStaffInstrumentField();
-    document.querySelector("#create-staff-modal").close();
+    closeAdminModal("#create-staff-modal");
     await loadStaff();
     enrollmentTeachers = [];
     showToast("Staff account created.");
@@ -452,7 +477,7 @@ async function openSessionEditor(session = null) {
   document.querySelector("#session-status").value = session?.status || "scheduled";
   document.querySelector("#session-room").value = session?.meeting_room || "";
   document.querySelector("#session-notes").value = session?.notes || "";
-  document.querySelector("#session-modal").showModal();
+  openAdminModal("#session-modal");
 }
 
 async function saveSession(event) {
@@ -478,7 +503,7 @@ async function saveSession(event) {
       method: sessionId ? "PATCH" : "POST",
       body: JSON.stringify(payload)
     });
-    document.querySelector("#session-modal").close();
+    closeAdminModal("#session-modal");
     await Promise.all([loadSessions(), loadDashboard()]);
     showToast(sessionId ? "Live session updated." : "Live session added.");
   } catch (saveError) {
@@ -628,7 +653,7 @@ function openResetPassword(button) {
   document.querySelector("#reset-password-error").hidden = true;
   document.querySelector("#reset-password-staff-id").value = button.dataset.staffId;
   document.querySelector("#reset-password-member").textContent = `Set a new temporary password for ${button.dataset.staffName}.`;
-  document.querySelector("#reset-password-modal").showModal();
+  openAdminModal("#reset-password-modal");
 }
 
 async function resetStaffPassword(event) {
@@ -643,7 +668,7 @@ async function resetStaffPassword(event) {
       method: "PATCH",
       body: JSON.stringify({ newPassword: document.querySelector("#reset-staff-password").value })
     });
-    document.querySelector("#reset-password-modal").close();
+    closeAdminModal("#reset-password-modal");
     showToast("Staff password reset.");
   } catch (resetError) {
     error.textContent = resetError.message;
@@ -690,7 +715,7 @@ async function openStudent(studentId) {
     </div>
   `).join("");
 
-  document.querySelector("#student-modal-content").innerHTML = `
+  document.querySelector("#student-page-content").innerHTML = `
     <header class="student-modal-header">
       <div class="student-modal-heading">
         <span class="table-avatar">${initials(student.name)}</span>
@@ -761,7 +786,7 @@ async function openStudent(studentId) {
       </section>
     </div>
   `;
-  document.querySelector("#student-modal").showModal();
+  navigateAdmin("student-detail");
 }
 
 async function saveStudentTeachers(studentId) {
@@ -824,19 +849,34 @@ async function openReview(button) {
   document.querySelector("#review-modal-subtitle").textContent = `Week ${button.dataset.week} submission`;
   document.querySelector("#review-file-name").textContent = button.dataset.fileName;
   const player = document.querySelector("#review-video-player");
+  const frame = document.querySelector("#review-video-frame");
   const icon = document.querySelector(".review-video-placeholder > span");
   const message = document.querySelector("#review-video-message");
-  player.hidden = true;
-  player.removeAttribute("src");
-  icon.hidden = false;
+  if (player) {
+    player.hidden = true;
+    player.removeAttribute("src");
+  }
+  if (frame) {
+    frame.hidden = true;
+    frame.removeAttribute("src");
+  }
+  if (icon) icon.hidden = false;
   message.textContent = "Loading private practice video...";
-  document.querySelector("#review-modal").showModal();
+  document.querySelector("#review-help-call").checked = false;
+  navigateAdmin("review-detail");
   try {
     const access = await api(`/api/reviews/${button.dataset.submissionId}/video-access`);
-    if (access.playbackUrl) {
+    if (access.embedUrl && frame) {
+      frame.src = access.embedUrl;
+      frame.hidden = false;
+      if (icon) icon.hidden = true;
+      message.textContent = "Google Drive preview is available inside this review.";
+    } else if (access.embedUrl) {
+      message.textContent = `Video preview is ready. Open this Drive preview link in a new tab: ${access.embedUrl}`;
+    } else if (access.playbackUrl && player) {
       player.src = access.playbackUrl;
       player.hidden = false;
-      icon.hidden = true;
+      if (icon) icon.hidden = true;
       message.textContent = "Private video access expires in 15 minutes.";
     } else {
       message.textContent = access.message || "This MVP currently stores the practice check-in details without the video file.";
@@ -864,9 +904,9 @@ async function submitReview(event) {
       ratings
     })
   });
-  document.querySelector("#review-modal").close();
   showToast("Review submitted and student analysis updated.");
   await Promise.all([loadReviews(), loadDashboard()]);
+  navigateAdmin("reviews");
 }
 
 async function loadAlerts() {
@@ -957,7 +997,11 @@ function bindEvents() {
   });
 
   document.querySelectorAll("[data-close-modal]").forEach((button) => {
-    button.addEventListener("click", () => document.querySelector(`#${button.dataset.closeModal}`).close());
+    button.addEventListener("click", () => closeAdminModal(`#${button.dataset.closeModal}`));
+  });
+
+  document.querySelectorAll(".admin-modal").forEach((modal) => {
+    modal.addEventListener("close", updateModalLock);
   });
 
   document.addEventListener("change", (event) => {

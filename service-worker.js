@@ -1,4 +1,4 @@
-const CACHE_NAME = "music-school-ots-v27";
+const CACHE_NAME = "music-school-ots-v29-clean-github";
 const APP_ASSETS = [
   "./",
   "./index.html",
