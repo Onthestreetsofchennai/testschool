@@ -1211,10 +1211,13 @@ select[multiple] option,
 }
 
 .review-page-form {
+  display: block;
   height: auto;
+  min-height: 0;
   max-height: none;
-  overflow: visible;
+  overflow: visible !important;
   padding-bottom: clamp(26px, 5vw, 46px);
+  overscroll-behavior: auto;
 }
 
 .review-page-form > .admin-button[type="submit"] {
@@ -1922,17 +1925,12 @@ textarea:focus {
     border-radius: 26px;
   }
 
-  .admin-modal,
-  .review-modal {
+  .admin-modal {
     width: calc(100% - 14px);
     max-height: calc(100dvh - 14px);
   }
 
-  .review-modal {
-    height: calc(100dvh - 14px);
-  }
-
-  .review-form {
+  .review-form:not(.review-page-form) {
     padding: 18px 14px max(90px, calc(env(safe-area-inset-bottom) + 72px));
   }
 
@@ -1958,7 +1956,11 @@ textarea:focus {
     grid-template-columns: 92px minmax(0, 1fr) 24px;
   }
 
-  .review-form > .admin-button[type="submit"] {
+  .review-form:not(.review-page-form) > .admin-button[type="submit"] {
     bottom: 8px;
+  }
+
+  .review-page-form {
+    padding: 18px 14px 30px;
   }
 }

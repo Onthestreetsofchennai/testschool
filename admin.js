@@ -112,6 +112,7 @@ async function logout(showMessage = true) {
 }
 
 function navigateAdmin(viewName) {
+  document.body.classList.remove("admin-modal-open");
   const navView = viewName === "student-detail" ? "students" : viewName === "review-detail" ? "reviews" : viewName;
   document.querySelectorAll(".admin-view").forEach((view) => {
     view.classList.toggle("is-active", view.id === `admin-view-${viewName}`);
