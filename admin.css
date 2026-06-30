@@ -971,6 +971,7 @@ select[multiple] option,
 .admin-modal {
   width: min(1040px, calc(100% - 30px));
   max-height: calc(100vh - 30px);
+  max-height: calc(100dvh - 30px);
   padding: 0;
   border: 0;
   border-radius: 27px;
@@ -986,6 +987,7 @@ select[multiple] option,
 .modal-surface {
   position: relative;
   max-height: calc(100vh - 30px);
+  max-height: calc(100dvh - 30px);
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -1149,6 +1151,22 @@ select[multiple] option,
 
 .review-modal {
   width: min(850px, calc(100% - 30px));
+  height: calc(100vh - 30px);
+  height: calc(100dvh - 30px);
+  max-height: calc(100vh - 30px);
+  max-height: calc(100dvh - 30px);
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: max(34px, calc(env(safe-area-inset-bottom) + 34px));
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .review-form h2 {
@@ -1171,6 +1189,49 @@ select[multiple] option,
   border-radius: 16px;
   background: var(--navy);
   color: white;
+}
+
+.review-form > .admin-button[type="submit"] {
+  position: sticky;
+  z-index: 5;
+  bottom: 0;
+  margin-top: 16px;
+  box-shadow:
+    0 -14px 32px rgba(13, 11, 26, 0.38),
+    0 18px 38px rgba(245, 119, 161, 0.2);
+}
+
+.student-detail-page {
+  display: grid;
+  gap: 22px;
+}
+
+.student-detail-page .student-modal-header {
+  margin-bottom: 0;
+}
+
+.review-page-form {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  padding-bottom: clamp(26px, 5vw, 46px);
+}
+
+.review-page-form > .admin-button[type="submit"] {
+  position: static;
+  width: min(100%, 560px);
+  margin-top: 20px;
+  box-shadow: 0 18px 38px rgba(245, 119, 161, 0.2);
+}
+
+.review-page-form .review-video-placeholder {
+  align-items: stretch;
+}
+
+.review-page-form .review-video-placeholder video,
+.review-page-form .review-video-frame {
+  width: min(620px, 100%);
+  max-height: 420px;
 }
 
 .review-video-placeholder > span {
@@ -1859,5 +1920,45 @@ textarea:focus {
   .login-card,
   .modal-surface {
     border-radius: 26px;
+  }
+
+  .admin-modal,
+  .review-modal {
+    width: calc(100% - 14px);
+    max-height: calc(100dvh - 14px);
+  }
+
+  .review-modal {
+    height: calc(100dvh - 14px);
+  }
+
+  .review-form {
+    padding: 18px 14px max(90px, calc(env(safe-area-inset-bottom) + 72px));
+  }
+
+  .review-form h2 {
+    padding-right: 42px;
+    font-size: 1.55rem;
+    line-height: 1.08;
+  }
+
+  .review-video-placeholder {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .review-video-placeholder video,
+  .review-video-frame {
+    width: 100%;
+    max-height: 210px;
+  }
+
+  .skill-rating-grid label {
+    grid-template-columns: 92px minmax(0, 1fr) 24px;
+  }
+
+  .review-form > .admin-button[type="submit"] {
+    bottom: 8px;
   }
 }

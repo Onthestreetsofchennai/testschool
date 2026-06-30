@@ -112,11 +112,12 @@ async function logout(showMessage = true) {
 }
 
 function navigateAdmin(viewName) {
+  const navView = viewName === "student-detail" ? "students" : viewName === "review-detail" ? "reviews" : viewName;
   document.querySelectorAll(".admin-view").forEach((view) => {
     view.classList.toggle("is-active", view.id === `admin-view-${viewName}`);
   });
   document.querySelectorAll(".admin-nav-item").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.adminView === viewName);
+    button.classList.toggle("is-active", button.dataset.adminView === navView);
   });
   const activeView = document.querySelector(`#admin-view-${viewName}`);
   document.querySelector("#admin-page-title").textContent = activeView?.dataset.title || "OTS Admin";
@@ -713,7 +714,7 @@ async function openStudent(studentId) {
     </div>
   `).join("");
 
-  document.querySelector("#student-modal-content").innerHTML = `
+  document.querySelector("#student-page-content").innerHTML = `
     <header class="student-modal-header">
       <div class="student-modal-heading">
         <span class="table-avatar">${initials(student.name)}</span>
@@ -784,7 +785,7 @@ async function openStudent(studentId) {
       </section>
     </div>
   `;
-  openAdminModal("#student-modal");
+  navigateAdmin("student-detail");
 }
 
 async function saveStudentTeachers(studentId) {
@@ -860,7 +861,8 @@ async function openReview(button) {
   }
   if (icon) icon.hidden = false;
   message.textContent = "Loading private practice video...";
-  openAdminModal("#review-modal");
+  document.querySelector("#review-help-call").checked = false;
+  navigateAdmin("review-detail");
   try {
     const access = await api(`/api/reviews/${button.dataset.submissionId}/video-access`);
     if (access.embedUrl && frame) {
@@ -901,9 +903,9 @@ async function submitReview(event) {
       ratings
     })
   });
-  closeAdminModal("#review-modal");
   showToast("Review submitted and student analysis updated.");
   await Promise.all([loadReviews(), loadDashboard()]);
+  navigateAdmin("reviews");
 }
 
 async function loadAlerts() {
