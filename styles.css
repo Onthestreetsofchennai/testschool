@@ -2816,6 +2816,36 @@ body {
   padding: clamp(22px, 4vw, 34px);
 }
 
+#view-home.is-active {
+  display: flex;
+  flex-direction: column;
+}
+
+#view-home .performer-journey-panel {
+  order: 1;
+}
+
+#view-home .hall-panel {
+  order: 2;
+}
+
+#view-home .motivation-grid {
+  order: 3;
+}
+
+#view-home .dashboard-grid {
+  order: 4;
+}
+
+#view-home .teacher-banner {
+  order: 5;
+}
+
+#view-home .hero-card,
+#view-home .stats-grid {
+  display: none;
+}
+
 .hall-heading {
   display: flex;
   justify-content: space-between;
@@ -2871,11 +2901,77 @@ body {
   color: #0d0b1a;
 }
 
+.fame-ring.is-minimal {
+  border-color: rgba(25, 230, 140, 0.52);
+  background: #19e68c;
+  color: #0d0b1a;
+}
+
 .fame-card small,
 .fame-card em {
   color: var(--muted);
   font-size: 0.78rem;
   font-style: normal;
+}
+
+.hall-panel.is-locked .hall-heading {
+  align-items: end;
+}
+
+.hall-panel.is-locked .fame-strip {
+  grid-template-columns: 1fr;
+}
+
+.leaderboard-locked-card,
+.batch-progress-card {
+  display: grid;
+  gap: 20px;
+  padding: clamp(20px, 4vw, 28px);
+  border: 1px solid rgba(244, 240, 255, 0.12);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(25, 230, 140, 0.18), transparent 28%),
+    rgba(244, 240, 255, 0.06);
+}
+
+.leaderboard-locked-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.leaderboard-locked-card strong,
+.batch-progress-card strong {
+  display: block;
+  color: #ffffff;
+  font-size: clamp(1.15rem, 3vw, 1.7rem);
+  letter-spacing: -0.03em;
+}
+
+.leaderboard-locked-card p,
+.batch-progress-card span {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.batch-progress-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(244, 240, 255, 0.12);
+}
+
+.batch-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #19e68c, #f5c842);
+  box-shadow: 0 0 22px rgba(25, 230, 140, 0.32);
+}
+
+.journey-cta.is-locked {
+  color: rgba(244, 240, 255, 0.72);
+  cursor: help;
 }
 
 .weekly-progress-list {
@@ -3382,6 +3478,11 @@ textarea:focus {
 
   .fame-strip {
     grid-template-columns: 1fr;
+  }
+
+  .leaderboard-locked-card {
+    grid-template-columns: 1fr;
+    justify-items: start;
   }
 
   .leaderboard-row {

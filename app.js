@@ -8,6 +8,7 @@ const API_ORIGIN = (() => {
   return WORKER_API_ORIGIN;
 })();
 const MIN_SUBMIT_PRACTICE_SECONDS = 60;
+const LEADERBOARD_MIN_STUDENTS = 30;
 
 const courseWeeks = [
   {
@@ -629,29 +630,64 @@ function renderGamification() {
     status.textContent = submitted[period] ? completeText : pendingText;
   });
 
-  const leaderboard = (state.leaderboard?.length ? state.leaderboard : [
-    { rank: 1, name: firstName, instrument: state.profile.instrument, current_week: state.currentWeek, weekly_submissions: 0, is_current_student: true },
-    { rank: 2, name: "Aarav", instrument: "Guitar", current_week: Math.max(1, state.currentWeek - 1), weekly_submissions: 6 },
-    { rank: 3, name: "Maya", instrument: "Guitar", current_week: Math.max(1, state.currentWeek - 1), weekly_submissions: 5 },
-    { rank: 4, name: "Rekha", instrument: "Guitar", current_week: Math.max(1, state.currentWeek - 2), weekly_submissions: 4 }
-  ]).map((student, index) => ({
+  const weeklyActivityTarget = 4;
+  const localPracticeCount = Number(submitted.morning) + Number(submitted.evening);
+  const rawLeaderboard = Array.isArray(state.leaderboard) ? state.leaderboard : [];
+  const leaderboardSource = rawLeaderboard.length ? rawLeaderboard : [
+    {
+      rank: 1,
+      name: firstName,
+      instrument: state.profile.instrument,
+      current_week: state.currentWeek,
+      weekly_submissions: localPracticeCount,
+      is_current_student: true
+    }
+  ];
+  const leaderboard = leaderboardSource.map((student, index) => ({
     ...student,
     rank: student.rank || index + 1,
     current_week: Number(student.current_week || student.currentWeek || 1),
     weekly_submissions: Number(student.weekly_submissions || 0)
   }));
+  if (!leaderboard.some((student) => student.is_current_student)) {
+    leaderboard.unshift({
+      rank: 1,
+      name: firstName,
+      instrument: state.profile.instrument,
+      current_week: state.currentWeek,
+      weekly_submissions: localPracticeCount,
+      is_current_student: true
+    });
+  }
 
   const initialFor = (student) => String(student.name || "S").trim().charAt(0).toUpperCase() || "S";
   const currentStudent = leaderboard.find((student) => student.is_current_student);
   const totalPods = leaderboard.reduce((sum, student) => sum + student.weekly_submissions, 0);
   const groupActive = leaderboard.filter((student) => student.weekly_submissions > 0).length || leaderboard.length;
+  const leaderboardReady = leaderboard.length >= LEADERBOARD_MIN_STUDENTS;
+  const unlockRemaining = Math.max(0, LEADERBOARD_MIN_STUDENTS - leaderboard.length);
+  const hallPanel = document.querySelector(".hall-panel");
+  const hallTitle = document.querySelector("#hall-title");
+  const leaderboardButton = document.querySelector("#view-leaderboard-button");
+  hallPanel?.classList.toggle("is-locked", !leaderboardReady);
+  if (hallTitle) {
+    hallTitle.textContent = leaderboardReady
+      ? "Recent performers from your batch"
+      : "Batch hall of fame opens soon";
+  }
+  if (leaderboardButton) {
+    leaderboardButton.dataset.leaderboardReady = leaderboardReady ? "true" : "false";
+    leaderboardButton.classList.toggle("is-locked", !leaderboardReady);
+    leaderboardButton.textContent = leaderboardReady ? "View leaderboard" : "Leaderboard at 30";
+    leaderboardButton.setAttribute("aria-disabled", leaderboardReady ? "false" : "true");
+  }
   document.querySelector("#group-active-count").textContent = groupActive;
   document.querySelector("#your-journey-rank").textContent = currentStudent ? `#${currentStudent.rank}` : "--";
   document.querySelector("#group-pods-count").textContent = totalPods;
-  document.querySelector("#hall-week-copy").textContent = `${leaderboard.length} learners on the path`;
+  document.querySelector("#hall-week-copy").textContent = leaderboardReady
+    ? `${leaderboard.length} learners on the path`
+    : `${unlockRemaining} more learners to unlock leaderboard`;
 
-  const weeklyActivityTarget = 4;
-  const localPracticeCount = Number(submitted.morning) + Number(submitted.evening);
   const currentWeeklySubmissions = currentStudent ? currentStudent.weekly_submissions : localPracticeCount;
   const weeklyActivityCount = Math.min(weeklyActivityTarget, Math.max(localPracticeCount, currentWeeklySubmissions));
   const weeklyActivityPercent = Math.round((weeklyActivityCount / weeklyActivityTarget) * 100);
@@ -668,15 +704,6 @@ function renderGamification() {
       : `${weeklyActivityTarget - weeklyActivityCount} more activity ${weeklyActivityTarget - weeklyActivityCount === 1 ? "step" : "steps"} to finish this week's stage.`;
   document.querySelector("#activity-mini-track").innerHTML = Array.from({ length: weeklyActivityTarget }, (_, index) => `
     <span class="${index < weeklyActivityCount ? "is-complete" : ""} ${index === weeklyActivityCount ? "is-current" : ""}"></span>
-  `).join("");
-
-  document.querySelector("#hall-of-fame-list").innerHTML = leaderboard.slice(0, 3).map((student, index) => `
-    <article class="fame-card ${student.is_current_student ? "is-you" : ""}">
-      <span class="fame-ring">${initialFor(student)}</span>
-      <strong>${escapeHtml(student.name)}${student.is_current_student ? " (You)" : ""}</strong>
-      <small>Week ${student.current_week} - ${student.weekly_submissions}/14 pods</small>
-      <em>${index === 0 ? "Lead performer" : index === 1 ? "Steady mover" : "Rising player"}</em>
-    </article>
   `).join("");
 
   const maxWeek = Math.max(4, ...leaderboard.map((student) => student.current_week));
@@ -707,7 +734,44 @@ function renderGamification() {
     `;
   }).join("");
 
-  document.querySelector("#weekly-progress-list").innerHTML = Array.from({ length: Math.min(maxWeek, 8) }, (_, index) => {
+  const fameList = document.querySelector("#hall-of-fame-list");
+  const weeklyProgressList = document.querySelector("#weekly-progress-list");
+  const leaderboardList = document.querySelector("#leaderboard-list");
+  if (!leaderboardReady) {
+    fameList.innerHTML = `
+      <article class="leaderboard-locked-card">
+        <span class="fame-ring is-minimal">${leaderboard.length}</span>
+        <div>
+          <strong>Batch leaderboard opens at ${LEADERBOARD_MIN_STUDENTS} learners.</strong>
+          <p>For now, your home stays minimal: focus on your own practice pods, streak and teacher feedback. When the batch becomes bigger, the hall of fame will turn on automatically.</p>
+        </div>
+      </article>
+    `;
+    weeklyProgressList.innerHTML = `
+      <article class="batch-progress-card">
+        <div>
+          <strong>${leaderboard.length}/${LEADERBOARD_MIN_STUDENTS}</strong>
+          <span>learners joined this path</span>
+        </div>
+        <div class="batch-progress-track">
+          <span style="width: ${Math.min(100, Math.round((leaderboard.length / LEADERBOARD_MIN_STUDENTS) * 100))}%"></span>
+        </div>
+      </article>
+    `;
+    leaderboardList.innerHTML = "";
+    return;
+  }
+
+  fameList.innerHTML = leaderboard.slice(0, 3).map((student, index) => `
+    <article class="fame-card ${student.is_current_student ? "is-you" : ""}">
+      <span class="fame-ring">${initialFor(student)}</span>
+      <strong>${escapeHtml(student.name)}${student.is_current_student ? " (You)" : ""}</strong>
+      <small>Week ${student.current_week} - ${student.weekly_submissions}/14 pods</small>
+      <em>${index === 0 ? "Lead performer" : index === 1 ? "Steady mover" : "Rising player"}</em>
+    </article>
+  `).join("");
+
+  weeklyProgressList.innerHTML = Array.from({ length: Math.min(maxWeek, 8) }, (_, index) => {
     const week = Math.min(maxWeek, 8) - index;
     const students = leaderboard.filter((student) => student.current_week === week);
     const visible = students.slice(0, 3);
@@ -722,7 +786,7 @@ function renderGamification() {
     `;
   }).join("");
 
-  document.querySelector("#leaderboard-list").innerHTML = leaderboard.slice(0, 10).map((student) => `
+  leaderboardList.innerHTML = leaderboard.slice(0, 10).map((student) => `
     <article class="leaderboard-row ${student.is_current_student ? "is-you" : ""}">
       <span class="leaderboard-rank">${student.rank}</span>
       <div>
@@ -1342,6 +1406,11 @@ function bindEvents() {
   });
 
   document.querySelector("#view-leaderboard-button")?.addEventListener("click", () => {
+    const button = document.querySelector("#view-leaderboard-button");
+    if (button?.dataset.leaderboardReady !== "true") {
+      showToast(`Leaderboard opens when the batch reaches ${LEADERBOARD_MIN_STUDENTS} learners. Until then, your dashboard stays focused on your own progress.`);
+      return;
+    }
     document.querySelector("#leaderboard-list")?.scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
