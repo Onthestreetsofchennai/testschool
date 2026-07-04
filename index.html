@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#111426">
   <meta name="description" content="MUSIC SCHOOL OTS guided 12-week music learning app">
   <title>MUSIC SCHOOL OTS</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -156,6 +159,27 @@
             </div>
           </div>
 
+          <section class="week-focus-grid" aria-label="Teacher week goal and notes">
+            <article class="week-goal-card clay-card">
+              <span class="quest-kicker">THIS WEEK'S TEACHER GOAL</span>
+              <h2 id="dashboard-week-goal">Complete your weekly practice goal.</h2>
+              <p id="dashboard-week-focus">Your teacher will set the exact focus for this week.</p>
+              <div class="teacher-goal-progress">
+                <div class="progress-track progress-track-dark">
+                  <span id="dashboard-week-progress-bar"></span>
+                </div>
+                <strong id="dashboard-week-progress-text">0%</strong>
+              </div>
+              <small id="dashboard-week-pods">0 of 4 practice pods completed</small>
+            </article>
+
+            <article class="teacher-notes-card clay-card">
+              <span class="quest-kicker">NOTES BOX</span>
+              <h2>Notes from <span data-teacher-first-name>your teacher</span></h2>
+              <p id="dashboard-teacher-notes">Your teacher's notes will appear here after the weekly plan is updated.</p>
+            </article>
+          </section>
+
           <div class="stats-grid">
             <article class="stat-card">
               <span class="stat-label">Practice streak</span>
@@ -185,14 +209,14 @@
               <span class="quest-kicker">TODAY'S QUEST</span>
               <h2>Unlock today's riff gate</h2>
               <div class="quest-pods" id="daily-quest-pods">
-                <div class="quest-pod" data-quest-pod="morning">
+                <button class="quest-pod" type="button" data-quest-pod="morning" data-checkin-period="morning">
                   <strong>Morning riff pod</strong>
                   <span id="morning-quest-status">Waiting for practice</span>
-                </div>
-                <div class="quest-pod" data-quest-pod="evening">
+                </button>
+                <button class="quest-pod" type="button" data-quest-pod="evening" data-checkin-period="evening">
                   <strong>Evening rhythm pod</strong>
                   <span id="evening-quest-status">Waiting for practice</span>
-                </div>
+                </button>
               </div>
             </article>
           </section>
@@ -200,8 +224,8 @@
           <section class="performer-journey-panel">
             <div class="journey-copy">
               <p class="journey-kicker">GUITAR CRASH COURSE JOURNEY</p>
-              <h2>Everyone is aiming to become a performer.</h2>
-              <p>Do not compete with others. See where you stand, celebrate the group progress, and keep moving one practice pod at a time.</p>
+              <h2 id="performer-title">Your week goal performer path.</h2>
+              <p id="performer-copy">Move one practice pod forward at a time. This path shows your weekly activity and the next stage you are working toward.</p>
             </div>
             <div class="journey-experience">
               <section class="speedometer-card" aria-label="Weekly activity speedometer">
@@ -237,7 +261,7 @@
                 <div class="roadmap-title-row">
                   <div>
                     <span>Performer Roadmap</span>
-                    <strong>Move your badge toward the final stage</strong>
+                    <strong id="roadmap-action-title">Move your badge through this week's goal</strong>
                   </div>
                   <button class="journey-cta" id="view-leaderboard-button" type="button">View leaderboard</button>
                 </div>

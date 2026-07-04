@@ -487,6 +487,17 @@ function navigate(viewName, bypassGate = false) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function openCheckinPeriod(period) {
+  navigate("checkin", true);
+  window.setTimeout(() => {
+    const card = document.querySelector(`.upload-card[data-period="${period}"]`);
+    if (!card) return;
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.classList.add("is-targeted");
+    window.setTimeout(() => card.classList.remove("is-targeted"), 1600);
+  }, 120);
+}
+
 function renderPracticeGate(forceVisible = false) {
   const gate = document.querySelector("#practice-gate");
   const appShell = document.querySelector("#app-shell");
@@ -506,7 +517,54 @@ function renderPracticeGate(forceVisible = false) {
 
 function calculateProgress() {
   const totalWeeks = Number(state.coursePlan?.totalWeeks || 12);
-  return Math.min(100, Math.round((state.completedWeeks.length / totalWeeks) * 100));
+  const completedProgress = Math.round((state.completedWeeks.length / totalWeeks) * 100);
+  const weekPositionProgress = Math.round((Math.max(0, Number(state.currentWeek || 1) - 1) / totalWeeks) * 100);
+  return Math.min(100, Math.max(completedProgress, weekPositionProgress));
+}
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
+}
+
+function currentWeekPlan() {
+  const plan = state.coursePlan || defaultState.coursePlan;
+  const weeks = plan.weeks?.length ? plan.weeks : courseWeeks;
+  const weekNumber = Math.max(1, Number(state.currentWeek || 1));
+  const week = weeks[weekNumber - 1] || weeks[0] || {};
+  const weeklyGoal = week.weekly_goal || week.weeklyGoal || week.milestone || week.title || "Complete this week's practice goal.";
+  const teacherNotes = week.teacher_notes || week.teacherNotes || week.practice_instructions || week.practiceInstructions || "";
+  return {
+    ...week,
+    weekNumber,
+    weeklyGoal,
+    teacherNotes,
+    targetPods: clampNumber(week.target_pods || week.targetPods || 4, 1, 28)
+  };
+}
+
+function periodSubmitted(period) {
+  return ["submitted", "reviewed"].includes(state.checkins?.[period]?.status);
+}
+
+function weeklyGoalSummary() {
+  const week = currentWeekPlan();
+  const targetPods = week.targetPods;
+  const currentWeek = Number(state.currentWeek || 1);
+  const submissionKeys = new Set();
+  (state.recentSubmissions || []).forEach((submission) => {
+    if (Number(submission.course_week || currentWeek) !== currentWeek) return;
+    if (!["pending", "reviewed"].includes(String(submission.review_status || "pending"))) return;
+    submissionKeys.add(submission.id || `${submission.period}-${submission.uploaded_at}`);
+  });
+  const todayCount = ["morning", "evening"].filter(periodSubmitted).length;
+  const completedPods = Math.min(targetPods, Math.max(submissionKeys.size, todayCount));
+  const percent = Math.min(100, Math.round((completedPods / targetPods) * 100));
+  return {
+    week,
+    targetPods,
+    completedPods,
+    percent
+  };
 }
 
 function teacherIdentity() {
@@ -542,7 +600,7 @@ function renderTeacherIdentity() {
 }
 
 function renderHome() {
-  const progress = calculateProgress();
+  const goalSummary = weeklyGoalSummary();
   const name = state.profile.name || "Student";
   const initial = name.trim().charAt(0).toUpperCase() || "S";
   const morningSubmitted = ["submitted", "reviewed"].includes(state.checkins.morning.status);
@@ -557,8 +615,18 @@ function renderHome() {
   if (heroInstrument) heroInstrument.textContent = state.profile.instrument.toUpperCase();
   document.querySelector("#hero-week").textContent = state.currentWeek;
   document.querySelector("#orbit-week").textContent = state.currentWeek;
-  document.querySelector("#hero-progress-text").textContent = `${progress}%`;
-  document.querySelector("#hero-progress-bar").style.width = `${progress}%`;
+  document.querySelector("#hero-goal").textContent = goalSummary.week.weeklyGoal;
+  document.querySelector("#hero-progress-text").textContent = `${goalSummary.percent}%`;
+  document.querySelector("#hero-progress-bar").style.width = `${goalSummary.percent}%`;
+  document.querySelector("#dashboard-week-goal").textContent = goalSummary.week.weeklyGoal;
+  document.querySelector("#dashboard-week-focus").textContent = goalSummary.week.focus ||
+    `Week ${state.currentWeek} focus for ${state.profile.instrument}.`;
+  document.querySelector("#dashboard-week-progress-text").textContent = `${goalSummary.percent}%`;
+  document.querySelector("#dashboard-week-progress-bar").style.width = `${goalSummary.percent}%`;
+  document.querySelector("#dashboard-week-pods").textContent =
+    `${goalSummary.completedPods} of ${goalSummary.targetPods} practice pods completed`;
+  document.querySelector("#dashboard-teacher-notes").textContent = goalSummary.week.teacherNotes ||
+    "Your teacher will add personal notes here for this week's practice.";
   document.querySelector("#streak-count").textContent = state.streak;
   document.querySelector("#review-count").textContent = `${state.reviews} received`;
   document.querySelector("#avatar-button").textContent = initial;
@@ -602,6 +670,7 @@ function renderHome() {
 
 function renderGamification() {
   const firstName = (state.profile.name || "Student").trim().split(/\s+/)[0] || "Student";
+  const goalSummary = weeklyGoalSummary();
   const practiceMinutes = Number(state.coursePlan?.practiceMinutes || Math.round(state.practiceGate.minDurationSeconds / 60) || 7);
   const submitted = {
     morning: ["submitted", "reviewed"].includes(state.checkins.morning.status),
@@ -630,8 +699,8 @@ function renderGamification() {
     status.textContent = submitted[period] ? completeText : pendingText;
   });
 
-  const weeklyActivityTarget = 4;
-  const localPracticeCount = Number(submitted.morning) + Number(submitted.evening);
+  const weeklyActivityTarget = goalSummary.targetPods;
+  const localPracticeCount = goalSummary.completedPods;
   const rawLeaderboard = Array.isArray(state.leaderboard) ? state.leaderboard : [];
   const leaderboardSource = rawLeaderboard.length ? rawLeaderboard : [
     {
@@ -665,28 +734,49 @@ function renderGamification() {
   const totalPods = leaderboard.reduce((sum, student) => sum + student.weekly_submissions, 0);
   const groupActive = leaderboard.filter((student) => student.weekly_submissions > 0).length || leaderboard.length;
   const leaderboardReady = leaderboard.length >= LEADERBOARD_MIN_STUDENTS;
-  const unlockRemaining = Math.max(0, LEADERBOARD_MIN_STUDENTS - leaderboard.length);
+  const performerPanel = document.querySelector(".performer-journey-panel");
   const hallPanel = document.querySelector(".hall-panel");
   const hallTitle = document.querySelector("#hall-title");
   const leaderboardButton = document.querySelector("#view-leaderboard-button");
-  hallPanel?.classList.toggle("is-locked", !leaderboardReady);
+  const performerTitle = document.querySelector("#performer-title");
+  const performerCopy = document.querySelector("#performer-copy");
+  const roadmapActionTitle = document.querySelector("#roadmap-action-title");
+  if (performerPanel) {
+    performerPanel.hidden = false;
+    performerPanel.classList.toggle("is-personal-mode", !leaderboardReady);
+  }
+  if (hallPanel) hallPanel.hidden = !leaderboardReady;
+  if (performerTitle) {
+    performerTitle.textContent = leaderboardReady
+      ? "Everyone is aiming to become a performer."
+      : "Your week goal performer path.";
+  }
+  if (performerCopy) {
+    performerCopy.textContent = leaderboardReady
+      ? "Do not compete with others. See where you stand, celebrate the group progress, and keep moving one practice pod at a time."
+      : "Move one practice pod forward at a time. This path shows your weekly activity and the next stage you are working toward.";
+  }
+  if (roadmapActionTitle) {
+    roadmapActionTitle.textContent = leaderboardReady
+      ? "Move your badge toward the final stage"
+      : "Move your badge through this week's goal";
+  }
   if (hallTitle) {
-    hallTitle.textContent = leaderboardReady
-      ? "Recent performers from your batch"
-      : "Batch hall of fame opens soon";
+    hallTitle.textContent = "Recent performers from your batch";
   }
   if (leaderboardButton) {
+    leaderboardButton.hidden = !leaderboardReady;
     leaderboardButton.dataset.leaderboardReady = leaderboardReady ? "true" : "false";
     leaderboardButton.classList.toggle("is-locked", !leaderboardReady);
-    leaderboardButton.textContent = leaderboardReady ? "View leaderboard" : "Leaderboard at 30";
+    leaderboardButton.textContent = leaderboardReady ? "View leaderboard" : "";
     leaderboardButton.setAttribute("aria-disabled", leaderboardReady ? "false" : "true");
   }
   document.querySelector("#group-active-count").textContent = groupActive;
   document.querySelector("#your-journey-rank").textContent = currentStudent ? `#${currentStudent.rank}` : "--";
   document.querySelector("#group-pods-count").textContent = totalPods;
-  document.querySelector("#hall-week-copy").textContent = leaderboardReady
-    ? `${leaderboard.length} learners on the path`
-    : `${unlockRemaining} more learners to unlock leaderboard`;
+  if (leaderboardReady) {
+    document.querySelector("#hall-week-copy").textContent = `${leaderboard.length} learners on the path`;
+  }
 
   const currentWeeklySubmissions = currentStudent ? currentStudent.weekly_submissions : localPracticeCount;
   const weeklyActivityCount = Math.min(weeklyActivityTarget, Math.max(localPracticeCount, currentWeeklySubmissions));
@@ -706,13 +796,23 @@ function renderGamification() {
     <span class="${index < weeklyActivityCount ? "is-complete" : ""} ${index === weeklyActivityCount ? "is-current" : ""}"></span>
   `).join("");
 
-  const maxWeek = Math.max(4, ...leaderboard.map((student) => student.current_week));
+  const roadmapStudents = leaderboardReady
+    ? leaderboard
+    : [currentStudent || {
+      rank: 1,
+      name: firstName,
+      instrument: state.profile.instrument,
+      current_week: state.currentWeek,
+      weekly_submissions: localPracticeCount,
+      is_current_student: true
+    }];
+  const maxWeek = Math.max(4, ...roadmapStudents.map((student) => student.current_week));
   const roadmapEnd = Math.max(4, Math.min(12, Math.max(maxWeek, state.currentWeek)));
   const roadmapStart = Math.max(1, roadmapEnd - 3);
   const roadmapWeeks = Array.from({ length: Math.min(4, roadmapEnd - roadmapStart + 1) }, (_, index) => roadmapStart + index);
   const roadColors = ["is-orange", "is-blue", "is-pink", "is-green"];
   document.querySelector("#performer-map").innerHTML = roadmapWeeks.map((week, index) => {
-    const students = leaderboard.filter((student) => student.current_week === week);
+    const students = roadmapStudents.filter((student) => student.current_week === week);
     const visible = students.slice(0, 3);
     const weekScore = students.reduce((sum, student) => sum + student.weekly_submissions, 0);
     return `
@@ -738,26 +838,8 @@ function renderGamification() {
   const weeklyProgressList = document.querySelector("#weekly-progress-list");
   const leaderboardList = document.querySelector("#leaderboard-list");
   if (!leaderboardReady) {
-    fameList.innerHTML = `
-      <article class="leaderboard-locked-card">
-        <span class="fame-ring is-minimal">${leaderboard.length}</span>
-        <div>
-          <strong>Batch leaderboard opens at ${LEADERBOARD_MIN_STUDENTS} learners.</strong>
-          <p>For now, your home stays minimal: focus on your own practice pods, streak and teacher feedback. When the batch becomes bigger, the hall of fame will turn on automatically.</p>
-        </div>
-      </article>
-    `;
-    weeklyProgressList.innerHTML = `
-      <article class="batch-progress-card">
-        <div>
-          <strong>${leaderboard.length}/${LEADERBOARD_MIN_STUDENTS}</strong>
-          <span>learners joined this path</span>
-        </div>
-        <div class="batch-progress-track">
-          <span style="width: ${Math.min(100, Math.round((leaderboard.length / LEADERBOARD_MIN_STUDENTS) * 100))}%"></span>
-        </div>
-      </article>
-    `;
+    fameList.innerHTML = "";
+    weeklyProgressList.innerHTML = "";
     leaderboardList.innerHTML = "";
     return;
   }
@@ -766,7 +848,7 @@ function renderGamification() {
     <article class="fame-card ${student.is_current_student ? "is-you" : ""}">
       <span class="fame-ring">${initialFor(student)}</span>
       <strong>${escapeHtml(student.name)}${student.is_current_student ? " (You)" : ""}</strong>
-      <small>Week ${student.current_week} - ${student.weekly_submissions}/14 pods</small>
+      <small>Week ${student.current_week} - ${student.weekly_submissions}/${weeklyActivityTarget} pods</small>
       <em>${index === 0 ? "Lead performer" : index === 1 ? "Steady mover" : "Rising player"}</em>
     </article>
   `).join("");
@@ -793,7 +875,7 @@ function renderGamification() {
         <strong>${escapeHtml(student.name)}${student.is_current_student ? " (You)" : ""}</strong>
         <small>${escapeHtml(student.instrument || "Guitar")} - Week ${student.current_week || 1}</small>
       </div>
-      <span class="leaderboard-score">${student.weekly_submissions || 0}/14 pods</span>
+      <span class="leaderboard-score">${student.weekly_submissions || 0}/${weeklyActivityTarget} pods</span>
     </article>
   `).join("");
 }
@@ -838,8 +920,11 @@ function renderCourse() {
             ${(week.lessons || []).map((lesson) => `<li>${escapeHtml(lesson)}</li>`).join("")}
           </ul>
           <div class="week-milestone">
-            <strong>Weekly milestone</strong>
-            <p>${escapeHtml(week.milestone)}</p>
+            <strong>Week goal</strong>
+            <p>${escapeHtml(week.weekly_goal || week.weeklyGoal || week.milestone)}</p>
+            <small>${escapeHtml(week.target_pods || week.targetPods || 4)} target practice pods this week</small>
+            ${week.teacher_notes || week.teacherNotes ? `<small class="week-teacher-note">Teacher notes: ${escapeHtml(week.teacher_notes || week.teacherNotes)}</small>` : ""}
+            ${week.milestone ? `<small>Milestone: ${escapeHtml(week.milestone)}</small>` : ""}
             ${week.practice_instructions || week.practiceInstructions ? `<small>${escapeHtml(week.practice_instructions || week.practiceInstructions)}</small>` : ""}
             ${action}
           </div>
@@ -1405,6 +1490,10 @@ function bindEvents() {
     button.addEventListener("click", () => navigate(button.dataset.view));
   });
 
+  document.querySelectorAll("[data-checkin-period]").forEach((button) => {
+    button.addEventListener("click", () => openCheckinPeriod(button.dataset.checkinPeriod));
+  });
+
   document.querySelector("#view-leaderboard-button")?.addEventListener("click", () => {
     const button = document.querySelector("#view-leaderboard-button");
     if (button?.dataset.leaderboardReady !== "true") {
@@ -1475,9 +1564,7 @@ function bindEvents() {
 
   document.querySelector("#practice-gate-upload").addEventListener("click", () => {
     document.querySelector("#practice-gate").hidden = true;
-    navigate("checkin", true);
-    const input = document.querySelector(`[data-upload-input="${state.practiceGate.activePeriod || "morning"}"]`);
-    input?.closest(".upload-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    openCheckinPeriod(state.practiceGate.activePeriod || "morning");
   });
 
   document.querySelector("#practice-gate-snooze").addEventListener("click", () => {
