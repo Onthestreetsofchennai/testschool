@@ -659,7 +659,7 @@ function renderHome() {
             <h3>${session.topic}</h3>
             <p>${new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(date)} with ${teacher.displayName}</p>
           </div>
-          <button class="button button-secondary join-session" data-room="session-${session.id}">Join classroom</button>
+          <button class="button button-secondary join-session" data-room="${escapeHtml(session.meeting_room || `session-${session.id}`)}">Join classroom</button>
         </article>
       `;
     }).join("")
@@ -1342,12 +1342,16 @@ async function removePendingSubmission(submissionId) {
   }
 }
 
+function liveClassroomUrl(roomName) {
+  const safeRoom = `ots-music-school-${roomName || "classroom"}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+  return `https://meet.jit.si/${safeRoom}#config.prejoinPageEnabled=false`;
+}
+
 async function openClassroom(roomName) {
   const modal = document.querySelector("#classroom-modal");
   const frame = document.querySelector("#classroom-frame");
   const liveRoom = document.querySelector("#open-live-room");
-  const safeRoom = `ots-${state.profile.email}-${roomName || "classroom"}`.replace(/[^a-zA-Z0-9_-]/g, "-");
-  const roomUrl = `https://meet.jit.si/${safeRoom}#config.prejoinPageEnabled=false`;
+  const roomUrl = liveClassroomUrl(roomName);
   liveRoom.href = roomUrl;
   frame.hidden = true;
   frame.src = "about:blank";
