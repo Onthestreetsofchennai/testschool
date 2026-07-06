@@ -185,6 +185,7 @@ let selectedHelpSlot = null;
 let toastTimer;
 const temporaryVideoUrls = {};
 const selectedPracticeFiles = {};
+const uploadProgress = {};
 let backendFeedback = null;
 let backendConnected = false;
 let classroomStream = null;
@@ -228,7 +229,43 @@ function apiEndpoint(path) {
   return /^https?:\/\//i.test(String(path || "")) ? path : `${API_ORIGIN}${path}`;
 }
 
-async function uploadPracticeVideoIfAvailable(period, file) {
+function uploadVideoWithProgress(url, file, onProgress = () => {}) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", apiEndpoint(url));
+    if (studentToken) xhr.setRequestHeader("Authorization", `Bearer ${studentToken}`);
+    xhr.setRequestHeader("Content-Type", file.type || "video/webm");
+
+    xhr.upload.onloadstart = () => onProgress({ percent: 2, label: "Preparing secure upload..." });
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) {
+        onProgress({ percent: 15, label: "Uploading video..." });
+        return;
+      }
+      const percent = Math.max(3, Math.min(96, Math.round((event.loaded / event.total) * 96)));
+      onProgress({ percent, label: `Uploading video ${percent}%` });
+    };
+    xhr.upload.onload = () => onProgress({ percent: 98, label: "Saving video to Drive..." });
+    xhr.onerror = () => reject(new Error("Video upload could not reach the school server. Please try again with a shorter video or refresh the app once."));
+    xhr.onload = () => {
+      let payload = {};
+      try {
+        payload = JSON.parse(xhr.responseText || "{}");
+      } catch {
+        reject(new Error("The school server replied with an unreadable upload response. Please try again."));
+        return;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(payload);
+        return;
+      }
+      reject(new Error(payload.error || "The practice video could not be uploaded."));
+    };
+    xhr.send(file);
+  });
+}
+
+async function uploadPracticeVideoIfAvailable(period, file, onProgress = () => {}) {
   if (!file) return { storageMode: "metadata-only-mvp", storageKey: "" };
   let config;
   try {
@@ -252,24 +289,12 @@ async function uploadPracticeVideoIfAvailable(period, file) {
     throw new Error(`This video is too large for upload. Please record a shorter practice clip under ${config.maxFileSizeMb || 95} MB.`);
   }
 
-  let response;
   try {
-    response = await fetch(apiEndpoint(config.uploadUrl), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${studentToken}`,
-        "Content-Type": file.type || "video/webm"
-      },
-      body: file
-    });
+    return await uploadVideoWithProgress(config.uploadUrl, file, onProgress);
   } catch (error) {
-    throw new Error("Video upload could not reach the school server. Please try again with a shorter video or refresh the app once.");
+    if (error.message.includes("practice video") || error.message.includes("school server")) throw error;
+    throw new Error(error.message || "The practice video could not be uploaded.");
   }
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload.error || "The practice video could not be uploaded.");
-  }
-  return payload;
 }
 
 function clearStudentSession() {
@@ -444,6 +469,36 @@ function practiceDurationNote(durationSeconds, targetSeconds) {
   if (!duration || duration >= target) return "";
   const targetMinutes = Math.max(1, Math.round(target / 60));
   return `Short practice accepted: ${formatPracticeDuration(duration)} uploaded. Aim for ${targetMinutes} mins for full progress points.`;
+}
+
+function setUploadProgress(period, percent, label) {
+  const safePercent = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+  const current = uploadProgress[period];
+  if (current && current.percent === safePercent && current.label === label) return;
+  uploadProgress[period] = { percent: safePercent, label };
+  renderCheckins();
+}
+
+function clearUploadProgress(period) {
+  if (!uploadProgress[period]) return;
+  delete uploadProgress[period];
+  renderCheckins();
+}
+
+function uploadProgressHtml(period) {
+  const progress = uploadProgress[period];
+  if (!progress) return "";
+  const percent = Math.max(0, Math.min(100, Math.round(progress.percent)));
+  return `
+    <div class="upload-progress" role="status" aria-live="polite">
+      <div class="upload-progress-row">
+        <strong>${escapeHtml(progress.label)}</strong>
+        <span>${percent}%</span>
+      </div>
+      <div class="upload-progress-track"><span style="width: ${percent}%"></span></div>
+      <small>Keep this page open until the upload completes.</small>
+    </div>
+  `;
 }
 
 function showToast(message) {
@@ -955,10 +1010,13 @@ function renderCheckins() {
     const required = period === "morning" ? state.coursePlan?.morningRequired : state.coursePlan?.eveningRequired;
     const removeButton = document.querySelector(`[data-remove-upload="${period}"]`);
     const submitButton = document.querySelector(`[data-submit-upload="${period}"]`);
+    const progress = uploadProgress[period];
     document.querySelector(`[data-period="${period}"]`).hidden = !required;
     document.querySelector(`#${period}-practice-requirement`).textContent = `${practiceMinutes}-minute focus goal`;
     removeButton.hidden = checkin.status !== "submitted" || !checkin.id;
-    submitButton.hidden = checkin.status !== "selected";
+    submitButton.hidden = checkin.status !== "selected" && !progress;
+    submitButton.disabled = Boolean(progress);
+    submitButton.textContent = progress ? "Uploading..." : `Submit ${period} video`;
 
     badge.className = "upload-status";
     if (checkin.status === "reviewed") {
@@ -981,6 +1039,7 @@ function renderCheckins() {
         <strong>${escapeHtml(checkin.fileName || `${period}-practice.webm`)}</strong>
         <small>${duration ? `${formatPracticeDuration(duration)} selected` : "Video selected"}</small>
         ${warning ? `<small class="practice-duration-warning">${escapeHtml(warning)}</small>` : ""}
+        ${uploadProgressHtml(period)}
       `;
       preview.classList.remove("is-empty");
     } else if (checkin.fileName) {
@@ -991,6 +1050,7 @@ function renderCheckins() {
         <strong id="${period}-file-label">${escapeHtml(checkin.fileName)}</strong>
         <small id="${period}-upload-time">${checkin.time ? `Uploaded at ${escapeHtml(checkin.time)}` : "Video selected"}</small>
         ${warning ? `<small class="practice-duration-warning">${escapeHtml(warning)}</small>` : ""}
+        ${uploadProgressHtml(period)}
       `;
       preview.classList.remove("is-empty");
     } else {
@@ -998,6 +1058,7 @@ function renderCheckins() {
         <span class="video-placeholder-icon">+</span>
         <strong id="${period}-file-label">Record or upload a video</strong>
         <small id="${period}-upload-time">${period === "morning" ? "Due by 9:00 AM" : "Due by 8:00 PM"}</small>
+        ${uploadProgressHtml(period)}
       `;
       preview.classList.add("is-empty");
     }
@@ -1291,11 +1352,16 @@ function closePracticeRecorder() {
 
 async function submitUpload(period) {
   const button = document.querySelector(`[data-submit-upload="${period}"]`);
+  if (uploadProgress[period]) return;
   button.disabled = true;
   let backendWarning = "";
   try {
+    setUploadProgress(period, 2, "Preparing secure upload...");
     if (backendConnected) {
-      const uploadedVideo = await uploadPracticeVideoIfAvailable(period, selectedPracticeFiles[period]);
+      const uploadedVideo = await uploadPracticeVideoIfAvailable(period, selectedPracticeFiles[period], ({ percent, label }) => {
+        setUploadProgress(period, percent, label);
+      });
+      setUploadProgress(period, 99, "Finalising practice check-in...");
       const submission = await apiRequest("/api/student/me/practice-submissions", {
         method: "POST",
         body: JSON.stringify({
@@ -1309,6 +1375,7 @@ async function submitUpload(period) {
       backendWarning = uploadedVideo.warning || submission.warning || "";
     }
 
+    setUploadProgress(period, 100, "Practice submitted.");
     const now = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date());
     state.checkins[period].status = "submitted";
     state.checkins[period].time = now;
@@ -1319,11 +1386,14 @@ async function submitUpload(period) {
     delete temporaryVideoUrls[period];
     delete selectedPracticeFiles[period];
     await syncStudentFromBackend();
+    clearUploadProgress(period);
     showToast(backendWarning || (period === "morning"
       ? "Morning Ninja unlocked. Course energy is building."
       : "Evening Finisher unlocked. Strong close today."));
   } catch (error) {
+    setUploadProgress(period, 0, "Upload failed. Please try again.");
     showToast(error.message);
+    window.setTimeout(() => clearUploadProgress(period), 2400);
   } finally {
     button.disabled = false;
   }
