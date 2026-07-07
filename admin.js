@@ -5,6 +5,7 @@ const API_ORIGIN = (() => {
   if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) return "";
   return WORKER_API_ORIGIN;
 })();
+const GOOGLE_MEET_CREATE_URL = "https://meet.google.com/new";
 
 let adminToken = localStorage.getItem(ADMIN_TOKEN_KEY) || "";
 let adminUser = null;
@@ -36,13 +37,23 @@ function formatDateTime(value) {
   }).format(new Date(value));
 }
 
-function liveClassroomUrl(roomName) {
-  const safeRoom = `ots-music-school-${roomName || "classroom"}`.replace(/[^a-zA-Z0-9_-]/g, "-");
-  return `https://meet.jit.si/${safeRoom}#config.prejoinPageEnabled=false`;
+function liveClassroomUrl(meetingValue) {
+  const value = String(meetingValue || "").trim();
+  if (!value) return GOOGLE_MEET_CREATE_URL;
+  if (/^https?:\/\//i.test(value)) return value;
+  const code = value
+    .replace(/^meet\.google\.com\//i, "")
+    .split(/[?#]/)[0]
+    .trim()
+    .toLowerCase();
+  if (/^[a-z]{3}-?[a-z]{4}-?[a-z]{3}$/.test(code)) {
+    return `https://meet.google.com/${code}`;
+  }
+  return GOOGLE_MEET_CREATE_URL;
 }
 
 function sessionRoomName(session) {
-  return session.meeting_room || `session-${session.id}`;
+  return session.meeting_room || "";
 }
 
 function assetUrl(path) {
@@ -239,7 +250,7 @@ async function loadDashboard() {
         <span>${formatDateTime(session.scheduled_at)}</span>
         <strong>${escapeHtml(session.student_name)}</strong>
         <small>${escapeHtml(session.topic)} · ${escapeHtml(session.teacher_name)}</small>
-        <a class="row-action" href="${liveClassroomUrl(sessionRoomName(session))}" target="_blank" rel="noopener">Join classroom</a>
+        <a class="row-action" href="${liveClassroomUrl(sessionRoomName(session))}" target="_blank" rel="noopener">Join Google Meet</a>
       </article>
     `).join("")
     : '<div class="empty-state">No upcoming sessions.</div>';
@@ -541,7 +552,7 @@ async function loadSessions() {
         <td><span class="status-pill ${session.status === "scheduled" || session.status === "attended" ? "green" : "amber"}">${escapeHtml(session.status)}</span></td>
         <td>
           <div class="session-actions">
-            <a class="row-action" href="${liveClassroomUrl(sessionRoomName(session))}" target="_blank" rel="noopener">Join</a>
+            <a class="row-action" href="${liveClassroomUrl(sessionRoomName(session))}" target="_blank" rel="noopener">Join Google Meet</a>
             <button class="row-action edit-session" data-session-id="${session.id}">Edit</button>
           </div>
         </td>
