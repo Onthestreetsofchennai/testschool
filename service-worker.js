@@ -1,4 +1,4 @@
-const CACHE_NAME = "music-school-ots-v36-week-goals-notes";
+const CACHE_NAME = "music-school-ots-v37-transparent-logo";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const APP_ASSETS = [
   "./manifest.webmanifest",
   "./favicon-16x16.png",
   "./favicon-32x32.png",
+  "./favicon-48x48.png",
   "./apple-touch-icon.png",
   "./icon-192.png",
   "./icon-512.png"

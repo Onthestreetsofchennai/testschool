@@ -6,9 +6,10 @@
   <meta name="theme-color" content="#111426">
   <meta name="description" content="MUSIC SCHOOL OTS guided 12-week music learning app">
   <title>MUSIC SCHOOL OTS</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png?v=37">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=37">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=37">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=37">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -80,7 +81,9 @@
   <div class="app-shell" id="app-shell" inert aria-hidden="true">
     <aside class="sidebar">
       <div class="brand-lockup sidebar-brand">
-        <span class="brand-mark"><img src="brand-logo-transparent.png" alt="On The Streets"></span>
+        <button class="brand-home-button" type="button" data-view="home" aria-label="Go to Home">
+          <span class="brand-mark"><img src="brand-logo-transparent.png" alt="On The Streets"></span>
+        </button>
         <span>
           <strong>MUSIC SCHOOL</strong>
           <small>12-week guided course</small>
@@ -122,7 +125,9 @@
     <div class="main-column">
       <header class="topbar">
         <div class="mobile-brand">
-          <span class="brand-mark"><img src="brand-logo-transparent.png" alt="On The Streets"></span>
+          <button class="brand-home-button" type="button" data-view="home" aria-label="Go to Home">
+            <span class="brand-mark"><img src="brand-logo-transparent.png" alt="On The Streets"></span>
+          </button>
           <strong>MUSIC SCHOOL</strong>
         </div>
         <div class="topbar-copy">
