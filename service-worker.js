@@ -1,4 +1,4 @@
-const CACHE_NAME = "music-school-ots-v37-transparent-logo";
+const CACHE_NAME = "music-school-ots-v38-logo-only";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -10,7 +10,8 @@ const APP_ASSETS = [
   "./favicon-48x48.png",
   "./apple-touch-icon.png",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./brand-logo-cropped.png"
 ];
 
 self.addEventListener("install", (event) => {
