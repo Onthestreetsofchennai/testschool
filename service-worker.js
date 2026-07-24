@@ -1,9 +1,15 @@
-const CACHE_NAME = "music-school-ots-v38-logo-only";
+const CACHE_NAME = "the-ots-music-school-v47-calendar-liquid-glass";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./guitar-companion.css",
+  "./guitar-companion.js",
+  "./guitar-duo-sad-intro.png",
+  "./guitar-duo-sad-idle.png",
+  "./guitar-duo-celebration.png",
+  "./guitar-duo-complete-idle.png",
   "./manifest.webmanifest",
   "./favicon-16x16.png",
   "./favicon-32x32.png",

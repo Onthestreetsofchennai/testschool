@@ -1,7 +1,7 @@
 const STORAGE_KEY = "musicSchoolOTSStateV1";
 const STUDENT_TOKEN_KEY = "otsStudentToken";
 const WELCOME_SEEN_PREFIX = "otsWelcomeSeen:";
-const WORKER_API_ORIGIN = "https://music-school-ots.sharoncornerstone56.workers.dev";
+const WORKER_API_ORIGIN = window.OTS_TEST_API_ORIGIN || "";
 const GOOGLE_MEET_CREATE_URL = "https://meet.google.com/new";
 const GOOGLE_MEET_NICKNAME_PREFIX = "ots-music-school-student";
 const API_ORIGIN = (() => {
@@ -108,7 +108,8 @@ const defaultState = {
     email: "",
     instrument: "Guitar",
     goal: "Play complete songs confidently",
-    teacherName: "Your teacher"
+    teacherName: "Your teacher",
+    courseStartDate: ""
   },
   currentWeek: 3,
   completedWeeks: [1, 2],
@@ -149,6 +150,8 @@ const defaultState = {
   },
   upcomingSessions: [],
   recentSubmissions: [],
+  practiceCalendar: [],
+  practicePausePeriods: [],
   helpCall: null,
   leaderboard: []
 };
@@ -209,13 +212,14 @@ let recorderTimerId = 0;
 let recordedPracticeBlob = null;
 let recordedPracticeSeconds = 0;
 let recordedPracticeUrl = "";
+let practiceCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
 const featureTourSteps = [
   {
     view: "home",
     selector: '[data-view="home"]',
     title: "Here is your Home.",
-    copy: "This is your weekly command centre: goal progress, today's quest, live sessions and teacher notes."
+    copy: "This is your weekly command centre: goal progress, practice calendar, live sessions and teacher notes."
   },
   {
     view: "checkin",
@@ -371,7 +375,7 @@ function showAuthError(message) {
 function showAdmissionInvite(email = "") {
   const card = document.querySelector("#student-admission-card");
   const applyLink = document.querySelector("#student-apply-whatsapp");
-  const message = `Hi MUSIC SCHOOL OTS, I wanna apply for the music course. My email is ${email || "not added yet"}.`;
+  const message = `Hi THE OTS MUSIC SCHOOL, I want to apply for the music course. My email is ${email || "not added yet"}.`;
   applyLink.href = `https://wa.me/919841610111?text=${encodeURIComponent(message)}`;
   card.hidden = false;
   document.querySelector("#student-auth-error").hidden = true;
@@ -388,7 +392,7 @@ function formatBackendDate(value) {
   }).format(new Date(value));
 }
 
-async function syncStudentFromBackend() {
+async function syncStudentFromBackend({ keepRecentSubmission = null, keepAuthVisible = false } = {}) {
   try {
     const data = await apiRequest("/api/student/me");
     backendConnected = true;
@@ -399,6 +403,7 @@ async function syncStudentFromBackend() {
     state.profile.instrument = data.profile.instrument;
     state.profile.goal = data.profile.goal;
     state.profile.teacherName = data.profile.teacher_name || "Your teacher";
+    state.profile.courseStartDate = data.profile.course_start_date || "";
     state.currentWeek = data.profile.current_week;
     state.completedWeeks = Array.from({ length: Math.max(0, state.currentWeek - 1) }, (_, index) => index + 1);
     state.reviews = data.feedback.length;
@@ -417,7 +422,14 @@ async function syncStudentFromBackend() {
       weeks: data.coursePlan.weeks || courseWeeks
     } : structuredClone(defaultState.coursePlan);
     state.upcomingSessions = data.upcomingSessions || [];
-    state.recentSubmissions = data.recentSubmissions || [];
+    const remoteRecentSubmissions = data.recentSubmissions || [];
+    const keepSubmission = keepRecentSubmission &&
+      !remoteRecentSubmissions.some((submission) => String(submission.id) === String(keepRecentSubmission.id));
+    state.recentSubmissions = keepSubmission
+      ? [keepRecentSubmission, ...remoteRecentSubmissions].slice(0, 14)
+      : remoteRecentSubmissions;
+    state.practiceCalendar = data.practiceCalendar || remoteRecentSubmissions;
+    state.practicePausePeriods = data.practicePausePeriods || [];
     state.leaderboard = data.leaderboard || [];
     state.checkins = {
       morning: { status: "pending", fileName: "", time: "" },
@@ -467,7 +479,7 @@ async function syncStudentFromBackend() {
 
     saveState();
     renderAll();
-    setAuthVisible(false);
+    if (!keepAuthVisible) setAuthVisible(false);
   } catch (error) {
     backendConnected = false;
     if (!studentToken) {
@@ -475,7 +487,7 @@ async function syncStudentFromBackend() {
       setAuthStep("email");
     } else {
       renderAll();
-      setAuthVisible(false);
+      if (!keepAuthVisible) setAuthVisible(false);
       showToast("Your saved session is open. Live data could not refresh yet.");
     }
   }
@@ -605,19 +617,32 @@ function showToast(message) {
   toastTimer = window.setTimeout(() => toast.classList.remove("is-visible"), 3200);
 }
 
+function celebrateCompletedTask(message, emote = "") {
+  window.dispatchEvent(new CustomEvent("ots:task-completed", {
+    detail: { message, emote }
+  }));
+}
+
 function welcomeKey(email) {
   return `${WELCOME_SEEN_PREFIX}${String(email || "").toLowerCase()}`;
 }
 
 function showFirstLoginCelebration(studentName, email) {
   const key = welcomeKey(email);
-  if (localStorage.getItem(key)) return;
+  if (localStorage.getItem(key)) return false;
   localStorage.setItem(key, "1");
   pendingFeatureTour = true;
   const firstName = (studentName || "Student").trim().split(/\s+/)[0] || "Student";
   document.querySelector("#welcome-modal-title").textContent =
     `${firstName}, congrats on choosing to learn a new skill.`;
   document.querySelector("#welcome-modal").showModal();
+  window.dispatchEvent(new CustomEvent("ots:first-login-welcome", {
+    detail: {
+      message: `${firstName}, welcome to your music journey! Take your first stage bow.`,
+      emote: "stage-bow"
+    }
+  }));
+  return true;
 }
 
 function clearFeatureTourHighlight() {
@@ -666,7 +691,7 @@ function navigate(viewName, bypassGate = false) {
   });
 
   const activeView = document.querySelector(`#view-${viewName}`);
-  document.querySelector("#topbar-title").textContent = activeView?.dataset.title || "MUSIC SCHOOL OTS";
+  document.querySelector("#topbar-title").textContent = activeView?.dataset.title || "THE OTS MUSIC SCHOOL";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -749,6 +774,86 @@ function weeklyGoalSummary() {
   };
 }
 
+function indiaDateKey(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function courseHasStarted() {
+  const today = indiaDateKey();
+  const startDate = String(state.profile.courseStartDate || "").slice(0, 10);
+  const recordedPractice = [...(state.practiceCalendar || []), ...(state.recentSubmissions || [])];
+  return Number(state.currentWeek || 1) > 1 ||
+    state.completedWeeks.length > 0 ||
+    recordedPractice.length > 0 ||
+    Boolean(startDate && startDate <= today);
+}
+
+function dateIsPaused(dateKey) {
+  return (state.practicePausePeriods || []).some((period) => {
+    const pausedOn = String(period.paused_on || "").slice(0, 10);
+    const resumedOn = String(period.resumed_on || "").slice(0, 10);
+    return pausedOn && dateKey >= pausedOn && (!resumedOn || dateKey < resumedOn);
+  });
+}
+
+function renderPracticeCalendar() {
+  const grid = document.querySelector("#practice-calendar-grid");
+  if (!grid) return;
+  const monthStart = new Date(practiceCalendarMonth.getFullYear(), practiceCalendarMonth.getMonth(), 1);
+  const monthEnd = new Date(practiceCalendarMonth.getFullYear(), practiceCalendarMonth.getMonth() + 1, 0);
+  const todayKey = indiaDateKey();
+  const submissionDates = new Set([...(state.practiceCalendar || []), ...(state.recentSubmissions || [])]
+    .map((submission) => indiaDateKey(submission.uploaded_at))
+    .filter(Boolean));
+  const earliestSubmission = [...submissionDates].sort()[0] || "";
+  const configuredStart = String(state.profile.courseStartDate || "").slice(0, 10);
+  const activeStart = configuredStart || earliestSubmission || indiaDateKey(monthStart);
+  const leadingDays = (monthStart.getDay() + 6) % 7;
+  const cells = Array.from({ length: leadingDays }, () => '<span class="practice-calendar-day is-empty" aria-hidden="true"></span>');
+  let completedCount = 0;
+  let missedCount = 0;
+
+  for (let day = 1; day <= monthEnd.getDate(); day += 1) {
+    const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), day, 12);
+    const dateKey = indiaDateKey(date);
+    const completed = submissionDates.has(dateKey);
+    const paused = !completed && dateIsPaused(dateKey);
+    const active = dateKey >= activeStart;
+    const missed = active && !paused && dateKey < todayKey && !completed;
+    const today = dateKey === todayKey;
+    const future = dateKey > todayKey;
+    if (completed) completedCount += 1;
+    if (missed) missedCount += 1;
+    const statusClass = completed ? "is-complete" : missed ? "is-missed" : paused ? "is-paused" : today ? "is-today" : future || !active ? "is-inactive" : "";
+    const symbol = completed ? "&#10003;" : missed ? "&times;" : paused ? "P" : "";
+    const statusLabel = completed ? "practiced" : missed ? "missed" : paused ? "approved pause" : today ? "today" : future ? "future day" : "before course start";
+    cells.push(`
+      <span class="practice-calendar-day ${statusClass}" role="gridcell" aria-label="${date.toLocaleDateString("en-IN", { day: "numeric", month: "long" })}: ${statusLabel}">
+        <small>${day}</small>
+        <strong aria-hidden="true">${symbol}</strong>
+      </span>
+    `);
+  }
+
+  document.querySelector("#practice-calendar-title").textContent = new Intl.DateTimeFormat("en-IN", {
+    month: "long",
+    year: "numeric"
+  }).format(monthStart);
+  document.querySelector("#practice-calendar-summary").textContent = `${completedCount} practiced, ${missedCount} missed`;
+  const currentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  document.querySelector("#practice-calendar-next").disabled = monthStart >= currentMonth;
+  grid.innerHTML = cells.join("");
+}
+
 function teacherIdentity() {
   const fullName = state.profile.teacherName || "Your teacher";
   if (fullName === "Your teacher") {
@@ -812,6 +917,9 @@ function renderHome() {
     ? (daily.status === "reviewed" ? "Reviewed by your teacher" : `Waiting for review. Expected before ${expectedReviewCopy(daily.uploadedAt)}`)
     : `${mission.title} - Due ${mission.due}`;
   document.querySelector("#daily-ring").textContent = `${submitted ? 1 : 0}/1`;
+  const welcomeCards = document.querySelector("#course-welcome-cards");
+  if (welcomeCards) welcomeCards.hidden = courseHasStarted();
+  renderPracticeCalendar();
 
   const morningItem = document.querySelector("#home-morning-item");
   const eveningItem = document.querySelector("#home-evening-item");
@@ -1177,13 +1285,16 @@ function renderCheckins() {
 
   document.querySelector("#checkin-streak").textContent = state.streak;
   renderHistory();
+  window.dispatchEvent(new CustomEvent("ots:checkin-state", {
+    detail: { completed: dailySubmitted() }
+  }));
 }
 
 function renderHistory() {
   const rows = state.recentSubmissions.map((submission) => ({
     id: submission.id,
     day: new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short" }).format(new Date(submission.uploaded_at)),
-    detail: `${submission.period === "morning" ? "Morning" : "Evening"} · ${Math.round(submission.duration_seconds / 60)} min`,
+    detail: `${submission.period === "morning" ? "Morning" : "Evening"} · ${Math.max(1, Math.round(Number(submission.duration_seconds || 0) / 60))} min`,
     status: submission.review_status === "reviewed" ? "Reviewed" : "Waiting review",
     removable: submission.review_status === "pending"
   }));
@@ -1466,6 +1577,7 @@ async function submitUpload(period) {
   if (uploadProgress[period]) return;
   button.disabled = true;
   let backendWarning = "";
+  let createdSubmission = null;
   try {
     setUploadProgress(period, 2, "Preparing secure upload...");
     if (backendConnected) {
@@ -1473,7 +1585,7 @@ async function submitUpload(period) {
         setUploadProgress(period, percent, label);
       });
       setUploadProgress(period, 99, "Finalising practice check-in...");
-      const submission = await apiRequest("/api/student/me/practice-submissions", {
+      createdSubmission = await apiRequest("/api/student/me/practice-submissions", {
         method: "POST",
         body: JSON.stringify({
           period,
@@ -1483,22 +1595,43 @@ async function submitUpload(period) {
           storageMode: uploadedVideo.storageMode || "metadata-only-mvp"
         })
       });
-      backendWarning = uploadedVideo.warning || submission.warning || "";
+      backendWarning = uploadedVideo.warning || createdSubmission.warning || "";
     }
 
     setUploadProgress(period, 100, "Practice submitted.");
-    const now = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date());
+    const uploadedAt = createdSubmission?.uploadedAt || new Date().toISOString();
+    const historySubmission = {
+      id: createdSubmission?.id || `local-${Date.now()}`,
+      period: createdSubmission?.period || period,
+      duration_seconds: Number(createdSubmission?.durationSeconds || state.checkins[period].durationSeconds || 0),
+      file_name: createdSubmission?.fileName || state.checkins[period].fileName || `${period}-practice.mp4`,
+      uploaded_at: uploadedAt,
+      review_status: createdSubmission?.reviewStatus || "pending"
+    };
+    const now = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date(uploadedAt));
     state.checkins[period].status = "submitted";
     state.checkins[period].time = now;
+    state.checkins[period].id = historySubmission.id;
+    state.checkins[period].uploadedAt = uploadedAt;
+    state.recentSubmissions = [
+      historySubmission,
+      ...state.recentSubmissions.filter((submission) => String(submission.id) !== String(historySubmission.id))
+    ].slice(0, 14);
+    state.practiceCalendar = [
+      historySubmission,
+      ...(state.practiceCalendar || []).filter((submission) => String(submission.id) !== String(historySubmission.id))
+    ];
     state.streak = Math.max(state.streak, 7);
     saveState();
+    renderHistory();
     button.hidden = true;
     if (temporaryVideoUrls[period]) URL.revokeObjectURL(temporaryVideoUrls[period]);
     delete temporaryVideoUrls[period];
     delete selectedPracticeFiles[period];
-    await syncStudentFromBackend();
+    await syncStudentFromBackend({ keepRecentSubmission: historySubmission });
     clearUploadProgress(period);
     showToast(backendWarning || `Daily check-in submitted. Your teacher will review it before ${expectedReviewCopy()}.`);
+    celebrateCompletedTask("Daily mission complete! Your practice streak is growing.");
   } catch (error) {
     setUploadProgress(period, 0, "Upload failed. Please try again.");
     showToast(error.message);
@@ -1511,11 +1644,20 @@ async function submitUpload(period) {
 async function removePendingSubmission(submissionId) {
   if (!submissionId) return;
   try {
-    await apiRequest(`/api/student/me/practice-submissions/${submissionId}`, {
+    const result = await apiRequest(`/api/student/me/practice-submissions/${submissionId}`, {
       method: "DELETE"
     });
+    state.recentSubmissions = state.recentSubmissions.filter((submission) => String(submission.id) !== String(submissionId));
+    state.practiceCalendar = (state.practiceCalendar || []).filter((submission) => String(submission.id) !== String(submissionId));
+    Object.values(state.checkins).forEach((checkin) => {
+      if (String(checkin.id) === String(submissionId)) {
+        Object.assign(checkin, { id: null, status: "pending", fileName: "", time: "", durationSeconds: 0, uploadedAt: "" });
+      }
+    });
+    saveState();
+    renderCheckins();
     await syncStudentFromBackend();
-    showToast("Pending practice upload removed.");
+    showToast(result.warning || "Pending practice upload removed.");
   } catch (error) {
     showToast(error.message);
   }
@@ -1603,6 +1745,7 @@ async function completeWeek(weekNumber) {
     }
   }
   showToast(`Week ${weekNumber} completed. Week ${state.currentWeek} is now active.`);
+  celebrateCompletedTask(`Great work! Week ${state.currentWeek} is now unlocked.`, "victory-jump");
 }
 
 async function requestStudentOtp(event) {
@@ -1659,11 +1802,13 @@ async function verifyStudentOtp(event) {
     });
     studentToken = result.token;
     localStorage.setItem(STUDENT_TOKEN_KEY, studentToken);
+    const loginEmail = result.student.email || pendingLoginEmail;
+    const firstLogin = !localStorage.getItem(welcomeKey(loginEmail));
     state = structuredClone(defaultState);
     backendFeedback = null;
+    await syncStudentFromBackend({ keepAuthVisible: firstLogin });
+    if (firstLogin) showFirstLoginCelebration(result.student.name, loginEmail);
     setAuthVisible(false);
-    await syncStudentFromBackend();
-    showFirstLoginCelebration(result.student.name, result.student.email || pendingLoginEmail);
     showToast(`Welcome back, ${result.student.name}.`);
   } catch (error) {
     showAuthError(error.message);
@@ -1705,6 +1850,17 @@ function bindEvents() {
       return;
     }
     document.querySelector("#leaderboard-list")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  document.querySelector("#practice-calendar-previous")?.addEventListener("click", () => {
+    practiceCalendarMonth = new Date(practiceCalendarMonth.getFullYear(), practiceCalendarMonth.getMonth() - 1, 1);
+    renderPracticeCalendar();
+  });
+  document.querySelector("#practice-calendar-next")?.addEventListener("click", () => {
+    const nextMonth = new Date(practiceCalendarMonth.getFullYear(), practiceCalendarMonth.getMonth() + 1, 1);
+    const currentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    if (nextMonth <= currentMonth) practiceCalendarMonth = nextMonth;
+    renderPracticeCalendar();
   });
 
   document.querySelector("#student-email-form").addEventListener("submit", requestStudentOtp);

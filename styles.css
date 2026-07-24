@@ -4446,3 +4446,351 @@ textarea:focus,
   height: 44px;
   border-radius: 0;
 }
+
+/* Mobile placement pass: compact, thumb-friendly and visually consistent with desktop. */
+@media (max-width: 780px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .ambient { display: none; }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    min-height: 62px;
+    padding: 8px 12px;
+    background: rgba(13, 11, 26, 0.94);
+  }
+
+  .mobile-brand { min-width: 0; gap: 9px; }
+  .mobile-brand strong {
+    overflow: hidden;
+    max-width: 48vw;
+    font-size: 0.76rem;
+    letter-spacing: 0.01em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mobile-brand small { font-size: 0.62rem; }
+  .mobile-brand .brand-mark { width: 38px; height: 38px; }
+
+  .topbar-actions { gap: 7px; }
+  .icon-button,
+  .avatar-button { width: 42px; height: 42px; min-width: 42px; }
+
+  main { padding: 14px 12px calc(96px + env(safe-area-inset-bottom)); }
+  .view { width: 100%; }
+
+  .page-intro,
+  .section-heading {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .page-intro h1,
+  .section-heading h2 { font-size: clamp(1.65rem, 8vw, 2.15rem); line-height: 1.02; }
+  .page-intro p,
+  .section-heading p { font-size: 0.88rem; line-height: 1.5; }
+
+  .hero-card,
+  #view-home .hero-card {
+    min-height: auto;
+    padding: 20px 18px;
+    border-radius: 22px;
+  }
+  .hero-content h1 { font-size: clamp(1.9rem, 10vw, 2.65rem); line-height: 0.98; }
+  .hero-content > p:not(.eyebrow) { font-size: 0.9rem; line-height: 1.5; }
+
+  .stats-grid,
+  .quick-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .stat-card,
+  .panel,
+  .session-card,
+  .teacher-focus,
+  .course-progress-card,
+  .week-card,
+  .week-milestone,
+  .upload-card,
+  .feedback-card,
+  .profile-card,
+  .preferences-panel,
+  .quest-card,
+  #view-home .quest-card,
+  .performer-journey-panel,
+  .hall-panel,
+  .speedometer-card,
+  .space-roadmap-card,
+  .week-goal-card,
+  .teacher-notes-card {
+    min-height: auto;
+    padding: 17px;
+    border-radius: 21px;
+  }
+
+  .stat-card strong { font-size: 1.45rem; }
+  .stat-card small,
+  .stat-label { font-size: 0.68rem; }
+  .quest-card h2,
+  #view-home .quest-card h2,
+  .week-goal-card h2,
+  .teacher-notes-card h2 { font-size: 1.55rem; }
+
+  .button,
+  button,
+  input,
+  select,
+  textarea { min-height: 44px; }
+  input,
+  select,
+  textarea { font-size: 16px; }
+
+  .bottom-nav {
+    min-height: 72px;
+    padding: 7px 5px calc(7px + env(safe-area-inset-bottom));
+  }
+  .bottom-nav .nav-item { min-height: 54px; border-radius: 13px; }
+
+  .onboarding {
+    align-items: end;
+    padding: 0;
+  }
+  .onboarding-panel.auth-panel {
+    width: 100%;
+    max-width: none;
+    max-height: 100dvh;
+    overflow-y: auto;
+    padding: 24px 18px calc(22px + env(safe-area-inset-bottom));
+    border-radius: 28px 28px 0 0;
+  }
+  .auth-panel .onboarding-copy h1 { font-size: clamp(2.2rem, 12vw, 3.3rem); }
+}
+
+@media (max-width: 390px) {
+  .mobile-brand strong { max-width: 42vw; font-size: 0.7rem; }
+}
+
+/* Collapsible daily practice calendar. */
+.practice-calendar-card {
+  margin: 0 0 22px;
+  overflow: hidden;
+  border: 1px solid rgba(244, 240, 255, 0.14);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(112, 87, 255, 0.2), transparent 34%),
+    linear-gradient(145deg, rgba(28, 24, 45, 0.96), rgba(13, 11, 26, 0.94));
+  color: #ffffff;
+  box-shadow: 0 24px 58px rgba(0, 0, 0, 0.24);
+}
+
+.practice-calendar-card summary {
+  display: grid;
+  min-height: 86px;
+  padding: 17px 22px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.practice-calendar-card summary::-webkit-details-marker { display: none; }
+.practice-calendar-card summary:focus-visible { outline: 3px solid rgba(142, 255, 220, 0.64); outline-offset: -3px; }
+.practice-calendar-card summary strong { display: block; color: #ffffff; font-size: 1rem; }
+.practice-calendar-card summary small { display: block; margin-top: 3px; color: rgba(244, 240, 255, 0.64); }
+
+.practice-calendar-summary-icon,
+.practice-calendar-chevron,
+.calendar-month-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.practice-calendar-chevron { transition: transform 180ms ease; }
+.practice-calendar-card[open] .practice-calendar-chevron { transform: rotate(180deg); }
+
+.practice-calendar-content {
+  padding: 0 22px 22px;
+  border-top: 1px solid rgba(244, 240, 255, 0.1);
+}
+
+.practice-calendar-toolbar {
+  display: grid;
+  padding: 20px 0 16px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.practice-calendar-toolbar h2 { margin: 3px 0 0; color: #ffffff; font-size: 1.5rem; }
+.calendar-month-button { padding: 0; font-size: 1.75rem; cursor: pointer; }
+.calendar-month-button:disabled { opacity: 0.3; cursor: not-allowed; }
+.calendar-month-button:not(:disabled):hover { border-color: rgba(142, 255, 220, 0.5); background: rgba(142, 255, 220, 0.1); }
+
+.practice-calendar-weekdays,
+.practice-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.practice-calendar-weekdays { margin-bottom: 8px; color: rgba(244, 240, 255, 0.48); font-size: 0.68rem; font-weight: 800; text-align: center; text-transform: uppercase; }
+
+.practice-calendar-day {
+  position: relative;
+  display: grid;
+  min-height: 62px;
+  padding: 7px;
+  place-items: center;
+  border: 1px solid rgba(244, 240, 255, 0.09);
+  border-radius: 16px;
+  background: rgba(244, 240, 255, 0.045);
+}
+
+.practice-calendar-day small { position: absolute; top: 6px; left: 8px; color: rgba(244, 240, 255, 0.58); font-size: 0.63rem; }
+.practice-calendar-day strong { color: #ffffff; font-size: 1.35rem; line-height: 1; }
+.practice-calendar-day.is-complete { border-color: rgba(25, 230, 140, 0.36); background: rgba(25, 230, 140, 0.13); box-shadow: inset 0 0 22px rgba(25, 230, 140, 0.08); }
+.practice-calendar-day.is-complete strong { color: #6fffc3; }
+.practice-calendar-day.is-missed { border-color: rgba(255, 91, 119, 0.34); background: rgba(255, 91, 119, 0.11); }
+.practice-calendar-day.is-missed strong { color: #ff7890; }
+.practice-calendar-day.is-paused { border-color: rgba(255, 194, 94, 0.3); background: rgba(255, 194, 94, 0.1); }
+.practice-calendar-day.is-paused strong { color: #ffd17a; font-size: 0.82rem; }
+.practice-calendar-day.is-today { border-color: rgba(112, 87, 255, 0.8); box-shadow: inset 0 0 0 1px rgba(112, 87, 255, 0.45), 0 0 24px rgba(112, 87, 255, 0.16); }
+.practice-calendar-day.is-inactive { opacity: 0.3; }
+.practice-calendar-day.is-empty { min-height: 0; border: 0; background: transparent; }
+
+.practice-calendar-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  padding-top: 16px;
+  color: rgba(244, 240, 255, 0.66);
+  font-size: 0.76rem;
+}
+
+.practice-calendar-footer span { display: inline-flex; align-items: center; gap: 6px; }
+.practice-calendar-footer strong { margin-left: auto; color: #ffffff; }
+.calendar-legend { display: inline-grid; width: 22px; height: 22px; place-items: center; border-radius: 7px; font-style: normal; font-weight: 900; }
+.calendar-legend.is-complete { background: rgba(25, 230, 140, 0.16); color: #6fffc3; }
+.calendar-legend.is-missed { background: rgba(255, 91, 119, 0.14); color: #ff7890; }
+.calendar-legend.is-paused { background: rgba(255, 194, 94, 0.14); color: #ffd17a; }
+
+/* Liquid-glass mobile placement. Desktop styling remains unchanged. */
+@media (max-width: 780px) {
+  body {
+    background:
+      radial-gradient(circle at 16% 12%, rgba(112, 87, 255, 0.2), transparent 34%),
+      radial-gradient(circle at 90% 68%, rgba(245, 119, 161, 0.13), transparent 35%),
+      #0d0b1a;
+  }
+
+  .topbar {
+    top: 8px;
+    width: calc(100% - 20px);
+    margin: 8px 10px 0;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 22px;
+    background: linear-gradient(145deg, rgba(36, 30, 60, 0.68), rgba(17, 14, 34, 0.72));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 18px 45px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(24px) saturate(165%);
+    -webkit-backdrop-filter: blur(24px) saturate(165%);
+  }
+
+  main { padding-bottom: calc(108px + env(safe-area-inset-bottom)); }
+
+  .hero-card,
+  #view-home .hero-card,
+  .stat-card,
+  .panel,
+  .session-card,
+  .teacher-focus,
+  .course-progress-card,
+  .week-card,
+  .upload-card,
+  .feedback-card,
+  .profile-card,
+  .preferences-panel,
+  .performer-journey-panel,
+  .hall-panel,
+  .speedometer-card,
+  .space-roadmap-card,
+  .week-goal-card,
+  .teacher-notes-card,
+  .practice-calendar-card {
+    border-color: rgba(255, 255, 255, 0.13);
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.035)),
+      rgba(20, 16, 39, 0.72);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 18px 42px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(22px) saturate(155%);
+    -webkit-backdrop-filter: blur(22px) saturate(155%);
+  }
+
+  .bottom-nav {
+    inset: auto 10px calc(10px + env(safe-area-inset-bottom));
+    min-height: 72px;
+    padding: 7px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 25px;
+    background:
+      radial-gradient(circle at 18% 0%, rgba(112, 87, 255, 0.3), transparent 34%),
+      linear-gradient(145deg, rgba(45, 37, 75, 0.78), rgba(14, 12, 28, 0.82));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 20px 48px rgba(0, 0, 0, 0.48);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+  }
+
+  .bottom-nav .nav-item {
+    min-width: 0;
+    min-height: 56px;
+    padding: 6px 2px;
+    border: 0;
+    border-radius: 18px;
+    background: transparent;
+    color: rgba(244, 240, 255, 0.64);
+    box-shadow: none;
+  }
+
+  .bottom-nav .nav-item svg {
+    width: 21px;
+    height: 21px;
+    padding: 0;
+    border-radius: 9px;
+    transition: transform 180ms ease, filter 180ms ease;
+  }
+
+  .bottom-nav .nav-item span { font-size: 0.61rem; font-weight: 800; }
+  .bottom-nav .nav-item.is-active {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: linear-gradient(145deg, rgba(112, 87, 255, 0.46), rgba(245, 119, 161, 0.28));
+    color: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 9px 22px rgba(112, 87, 255, 0.24);
+  }
+  .bottom-nav .nav-item.is-active svg { background: transparent; transform: translateY(-1px) scale(1.06); filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.34)); }
+
+  .practice-calendar-card summary { min-height: 72px; padding: 13px 14px; }
+  .practice-calendar-content { padding: 0 12px 15px; }
+  .practice-calendar-weekdays,
+  .practice-calendar-grid { gap: 5px; }
+  .practice-calendar-day { min-height: 48px; padding: 5px; border-radius: 12px; }
+  .practice-calendar-day small { top: 4px; left: 6px; font-size: 0.56rem; }
+  .practice-calendar-day strong { font-size: 1.05rem; }
+  .practice-calendar-footer { gap: 9px 12px; }
+  .practice-calendar-footer strong { width: 100%; margin-left: 0; }
+}
