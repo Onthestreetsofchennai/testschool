@@ -254,8 +254,9 @@ async function apiRequest(path, options = {}) {
   };
   if (studentToken) headers.Authorization = `Bearer ${studentToken}`;
   const response = await fetch(`${API_ORIGIN}${path}`, {
-    headers,
-    ...options
+    ...options,
+    credentials: "include",
+    headers
   });
   const payload = await response.json().catch(() => ({}));
   if (response.status === 401 && !path.startsWith("/api/student-auth/")) {
@@ -279,6 +280,7 @@ function uploadVideoWithProgress(url, file, onProgress = () => {}) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", apiEndpoint(url));
+    xhr.withCredentials = true;
     if (studentToken) xhr.setRequestHeader("Authorization", `Bearer ${studentToken}`);
     xhr.setRequestHeader("Content-Type", file.type || "video/webm");
 
@@ -797,14 +799,6 @@ function courseHasStarted() {
     Boolean(startDate && startDate <= today);
 }
 
-function dateIsPaused(dateKey) {
-  return (state.practicePausePeriods || []).some((period) => {
-    const pausedOn = String(period.paused_on || "").slice(0, 10);
-    const resumedOn = String(period.resumed_on || "").slice(0, 10);
-    return pausedOn && dateKey >= pausedOn && (!resumedOn || dateKey < resumedOn);
-  });
-}
-
 function renderPracticeCalendar() {
   const grid = document.querySelector("#practice-calendar-grid");
   if (!grid) return;
@@ -826,16 +820,15 @@ function renderPracticeCalendar() {
     const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), day, 12);
     const dateKey = indiaDateKey(date);
     const completed = submissionDates.has(dateKey);
-    const paused = !completed && dateIsPaused(dateKey);
     const active = dateKey >= activeStart;
-    const missed = active && !paused && dateKey < todayKey && !completed;
+    const missed = active && dateKey < todayKey && !completed;
     const today = dateKey === todayKey;
     const future = dateKey > todayKey;
     if (completed) completedCount += 1;
     if (missed) missedCount += 1;
-    const statusClass = completed ? "is-complete" : missed ? "is-missed" : paused ? "is-paused" : today ? "is-today" : future || !active ? "is-inactive" : "";
-    const symbol = completed ? "&#10003;" : missed ? "&times;" : paused ? "P" : "";
-    const statusLabel = completed ? "practiced" : missed ? "missed" : paused ? "approved pause" : today ? "today" : future ? "future day" : "before course start";
+    const statusClass = completed ? "is-complete" : missed ? "is-missed" : today ? "is-today" : future || !active ? "is-inactive" : "";
+    const symbol = completed ? "&#128293;" : missed ? "&#8226;" : "";
+    const statusLabel = completed ? "practiced" : missed ? "missed" : today ? "today" : future ? "future day" : "before course start";
     cells.push(`
       <span class="practice-calendar-day ${statusClass}" role="gridcell" aria-label="${date.toLocaleDateString("en-IN", { day: "numeric", month: "long" })}: ${statusLabel}">
         <small>${day}</small>
@@ -1819,7 +1812,7 @@ async function verifyStudentOtp(event) {
 
 async function logoutStudent() {
   try {
-    if (studentToken) await apiRequest("/api/student-auth/logout", { method: "POST", body: "{}" });
+    await apiRequest("/api/student-auth/logout", { method: "POST", body: "{}" });
   } catch {
     // Local logout must still complete if the session has already expired.
   }
@@ -2073,8 +2066,14 @@ async function init() {
     setAuthVisible(false);
     await syncStudentFromBackend();
   } else {
-    setAuthStep("email");
-    setAuthVisible(true);
+    try {
+      await apiRequest("/api/student-auth/me");
+      setAuthVisible(false);
+      await syncStudentFromBackend();
+    } catch {
+      setAuthStep("email");
+      setAuthVisible(true);
+    }
   }
 
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {

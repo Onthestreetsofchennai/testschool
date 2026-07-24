@@ -1,4 +1,4 @@
-const CACHE_NAME = "the-ots-music-school-v47-calendar-liquid-glass";
+const CACHE_NAME = "the-ots-music-school-v49-practice-calendar";
 const APP_ASSETS = [
   "./",
   "./index.html",

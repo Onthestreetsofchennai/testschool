@@ -4664,11 +4664,9 @@ textarea:focus,
 .practice-calendar-day small { position: absolute; top: 6px; left: 8px; color: rgba(244, 240, 255, 0.58); font-size: 0.63rem; }
 .practice-calendar-day strong { color: #ffffff; font-size: 1.35rem; line-height: 1; }
 .practice-calendar-day.is-complete { border-color: rgba(25, 230, 140, 0.36); background: rgba(25, 230, 140, 0.13); box-shadow: inset 0 0 22px rgba(25, 230, 140, 0.08); }
-.practice-calendar-day.is-complete strong { color: #6fffc3; }
+.practice-calendar-day.is-complete strong { font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif; filter: drop-shadow(0 0 7px rgba(255, 126, 34, 0.42)); }
 .practice-calendar-day.is-missed { border-color: rgba(255, 91, 119, 0.34); background: rgba(255, 91, 119, 0.11); }
-.practice-calendar-day.is-missed strong { color: #ff7890; }
-.practice-calendar-day.is-paused { border-color: rgba(255, 194, 94, 0.3); background: rgba(255, 194, 94, 0.1); }
-.practice-calendar-day.is-paused strong { color: #ffd17a; font-size: 0.82rem; }
+.practice-calendar-day.is-missed strong { color: #ff7890; font-size: 2rem; }
 .practice-calendar-day.is-today { border-color: rgba(112, 87, 255, 0.8); box-shadow: inset 0 0 0 1px rgba(112, 87, 255, 0.45), 0 0 24px rgba(112, 87, 255, 0.16); }
 .practice-calendar-day.is-inactive { opacity: 0.3; }
 .practice-calendar-day.is-empty { min-height: 0; border: 0; background: transparent; }
@@ -4686,9 +4684,8 @@ textarea:focus,
 .practice-calendar-footer span { display: inline-flex; align-items: center; gap: 6px; }
 .practice-calendar-footer strong { margin-left: auto; color: #ffffff; }
 .calendar-legend { display: inline-grid; width: 22px; height: 22px; place-items: center; border-radius: 7px; font-style: normal; font-weight: 900; }
-.calendar-legend.is-complete { background: rgba(25, 230, 140, 0.16); color: #6fffc3; }
-.calendar-legend.is-missed { background: rgba(255, 91, 119, 0.14); color: #ff7890; }
-.calendar-legend.is-paused { background: rgba(255, 194, 94, 0.14); color: #ffd17a; }
+.calendar-legend.is-complete { background: rgba(25, 230, 140, 0.16); font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
+.calendar-legend.is-missed { background: rgba(255, 91, 119, 0.14); color: #ff7890; font-size: 1.35rem; }
 
 /* Liquid-glass mobile placement. Desktop styling remains unchanged. */
 @media (max-width: 780px) {
