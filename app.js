@@ -189,6 +189,7 @@ const feedbackItems = [
 
 let state = loadState();
 let studentToken = localStorage.getItem(STUDENT_TOKEN_KEY) || "";
+let studentSessionCheckTimer = 0;
 let pendingLoginEmail = "";
 let pendingOtpSessionId = "";
 let selectedHelpSlot = null;
@@ -260,11 +261,11 @@ async function apiRequest(path, options = {}) {
   });
   const payload = await response.json().catch(() => ({}));
   if (response.status === 401 && !path.startsWith("/api/student-auth/")) {
-    clearStudentSession();
-    setAuthVisible(true);
+    handleStudentSessionEnded();
   }
   if (!response.ok) {
     const error = new Error(payload.error || "The server could not complete this request.");
+    error.status = response.status;
     error.code = payload.code || "";
     error.payload = payload;
     throw error;
@@ -352,10 +353,26 @@ function clearStudentSession() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+function handleStudentSessionEnded() {
+  clearStudentSession();
+  state = structuredClone(defaultState);
+  backendFeedback = null;
+  pendingLoginEmail = "";
+  pendingOtpSessionId = "";
+  const emailInput = document.querySelector("#student-login-email");
+  const otpInput = document.querySelector("#student-login-otp");
+  if (emailInput) emailInput.value = "";
+  if (otpInput) otpInput.value = "";
+  setAuthStep("email");
+  renderAll();
+  setAuthVisible(true);
+}
+
 function setAuthVisible(visible) {
   const auth = document.querySelector("#student-auth");
   const appShell = document.querySelector("#app-shell");
   auth.hidden = !visible;
+  appShell.hidden = visible;
   appShell.toggleAttribute("inert", visible);
   appShell.setAttribute("aria-hidden", String(visible));
 }
@@ -933,9 +950,9 @@ function renderHome() {
             <span>${date.getDate()}</span>
           </div>
           <div class="session-copy">
-            <span class="tag ${index === 0 ? "tag-purple" : "tag-yellow"}">Session ${session.session_number}</span>
-            <h3>${session.topic}</h3>
-            <p>${new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(date)} with ${teacher.displayName}</p>
+            <span class="tag ${index === 0 ? "tag-purple" : "tag-yellow"}">Session ${Math.max(1, Number(session.session_number) || 1)}</span>
+            <h3>${escapeHtml(session.topic || "One-to-one music class")}</h3>
+            <p>${new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(date)} with ${escapeHtml(teacher.displayName)}</p>
           </div>
           <button class="button button-secondary join-session" data-room="${escapeHtml(session.meeting_room || "")}" data-student-id="${escapeHtml(session.student_id || state.profile.id || "")}">Join Google Meet</button>
         </article>
@@ -1096,7 +1113,7 @@ function renderGamification() {
           <span class="road-stone"></span>
           <div class="road-avatar-stack">
             ${visible.map((student, avatarIndex) => `
-              <span class="road-avatar ${student.is_current_student ? "is-you" : roadColors[avatarIndex % roadColors.length]}">${initialFor(student)}</span>
+              <span class="road-avatar ${student.is_current_student ? "is-you" : roadColors[avatarIndex % roadColors.length]}">${escapeHtml(initialFor(student))}</span>
             `).join("")}
             ${students.length ? `<em>+${Math.max(weekScore, students.length)}</em>` : `<span class="road-avatar is-empty"></span>`}
           </div>
@@ -1117,7 +1134,7 @@ function renderGamification() {
 
   fameList.innerHTML = leaderboard.slice(0, 3).map((student, index) => `
     <article class="fame-card ${student.is_current_student ? "is-you" : ""}">
-      <span class="fame-ring">${initialFor(student)}</span>
+      <span class="fame-ring">${escapeHtml(initialFor(student))}</span>
       <strong>${escapeHtml(student.name)}${student.is_current_student ? " (You)" : ""}</strong>
       <small>Week ${student.current_week} - ${student.weekly_submissions}/${weeklyActivityTarget} check-ins</small>
       <em>${index === 0 ? "Lead performer" : index === 1 ? "Steady mover" : "Rising player"}</em>
@@ -1132,7 +1149,7 @@ function renderGamification() {
       <article class="weekly-progress-row">
         <strong>Week ${week}</strong>
         <div class="weekly-avatar-stack">
-          ${visible.map((student) => `<span class="${student.is_current_student ? "is-you" : ""}">${initialFor(student)}</span>`).join("")}
+          ${visible.map((student) => `<span class="${student.is_current_student ? "is-you" : ""}">${escapeHtml(initialFor(student))}</span>`).join("")}
           <em>+${Math.max(0, students.length - visible.length)}</em>
         </div>
       </article>
@@ -1307,15 +1324,15 @@ function renderFeedback() {
   const teacher = teacherIdentity();
   document.querySelector("#feedback-list").innerHTML = items.map((item) => `
     <article class="feedback-card">
-      <div class="teacher-avatar small">${teacher.initials}</div>
+      <div class="teacher-avatar small">${escapeHtml(teacher.initials)}</div>
       <div>
-        <span class="tag tag-purple">${item.period}</span>
-        <h3>${item.title}</h3>
-        <p>${item.message}</p>
+        <span class="tag tag-purple">${escapeHtml(item.period)}</span>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(item.message)}</p>
         <div class="feedback-inputs">
-          ${item.inputs.map((input, index) => `<div class="feedback-input"><span>${index + 1}</span>${input}</div>`).join("")}
+          ${(Array.isArray(item.inputs) ? item.inputs : []).map((input, index) => `<div class="feedback-input"><span>${index + 1}</span>${escapeHtml(input)}</div>`).join("")}
         </div>
-        <p class="microcopy">${item.time}</p>
+        <p class="microcopy">${escapeHtml(item.time)}</p>
       </div>
     </article>
   `).join("");
@@ -1665,7 +1682,17 @@ function standardGoogleMeetLink(studentId) {
 function liveClassroomUrl(meetingValue, studentId = 0) {
   const value = String(meetingValue || "").trim();
   if (!value) return standardGoogleMeetLink(studentId) || GOOGLE_MEET_CREATE_URL;
-  if (/^https?:\/\//i.test(value)) return value;
+  try {
+    const url = new URL(value);
+    const validPath = /^\/(?:new|lookup\/[a-z0-9-]{3,100}|[a-z0-9_-]{3,120})\/?$/i.test(url.pathname);
+    if (url.protocol === "https:" && url.hostname === "meet.google.com" && !url.username && !url.password && !url.port && validPath) {
+      url.search = "";
+      url.hash = "";
+      return url.href;
+    }
+  } catch {
+    // A short Meet code is normalized below.
+  }
   const code = value
     .replace(/^meet\.google\.com\//i, "")
     .split(/[?#]/)[0]
@@ -1816,15 +1843,25 @@ async function logoutStudent() {
   } catch {
     // Local logout must still complete if the session has already expired.
   }
-  clearStudentSession();
-  state = structuredClone(defaultState);
-  backendFeedback = null;
-  pendingLoginEmail = "";
-  pendingOtpSessionId = "";
-  document.querySelector("#student-login-email").value = "";
-  document.querySelector("#student-login-otp").value = "";
-  setAuthStep("email");
-  setAuthVisible(true);
+  handleStudentSessionEnded();
+}
+
+async function validateActiveStudentSession() {
+  if (!studentToken && !backendConnected) return;
+  try {
+    await apiRequest("/api/student-auth/me");
+  } catch (error) {
+    if (error.status === 401) handleStudentSessionEnded();
+  }
+}
+
+function startStudentSessionMonitor() {
+  window.clearInterval(studentSessionCheckTimer);
+  studentSessionCheckTimer = window.setInterval(validateActiveStudentSession, 30000);
+  window.addEventListener("focus", validateActiveStudentSession);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") validateActiveStudentSession();
+  });
 }
 
 function bindEvents() {
@@ -2079,6 +2116,7 @@ async function init() {
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("service-worker.js").catch(() => {});
   }
+  startStudentSessionMonitor();
 }
 
 init();

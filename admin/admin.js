@@ -1,5 +1,5 @@
 const ADMIN_TOKEN_KEY = "otsAdminToken";
-const WORKER_API_ORIGIN = window.OTS_API_ORIGIN || "https://music-school-ots.sharoncornerstone56.workers.dev";
+const WORKER_API_ORIGIN = window.OTS_TEST_API_ORIGIN || "";
 const API_ORIGIN = (() => {
   const host = window.location.hostname;
   if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) return "";
@@ -52,7 +52,17 @@ function standardGoogleMeetLink(studentId) {
 function liveClassroomUrl(meetingValue, studentId = 0) {
   const value = String(meetingValue || "").trim();
   if (!value) return standardGoogleMeetLink(studentId) || GOOGLE_MEET_CREATE_URL;
-  if (/^https?:\/\//i.test(value)) return value;
+  try {
+    const url = new URL(value);
+    const validPath = /^\/(?:new|lookup\/[a-z0-9-]{3,100}|[a-z0-9_-]{3,120})\/?$/i.test(url.pathname);
+    if (url.protocol === "https:" && url.hostname === "meet.google.com" && !url.username && !url.password && !url.port && validPath) {
+      url.search = "";
+      url.hash = "";
+      return url.href;
+    }
+  } catch {
+    // A short Meet code is normalized below.
+  }
   const code = value
     .replace(/^meet\.google\.com\//i, "")
     .split(/[?#]/)[0]
@@ -119,8 +129,9 @@ async function loadBackendHealth() {
   const statusLine = document.querySelector("#admin-backend-status");
   if (!statusLine) return;
   try {
-    const response = await fetch(`${API_ORIGIN}/api/health`);
-    const health = await response.json();
+    const health = adminToken
+      ? await api("/api/health")
+      : await fetch(`${API_ORIGIN}/api/health`).then((response) => response.json());
     const database = health.database === "cloudflare-d1" ? "Cloudflare D1" : health.database || "database";
     const storage = health.videoStorage === "google-drive" ? "Google Drive active" : "metadata only";
     statusLine.textContent = `${database} / Video storage: ${storage}`;
@@ -250,7 +261,7 @@ async function loadDashboard() {
     <tr>
       <td>
         <div class="student-cell">
-          <span class="table-avatar">${initials(student.name)}</span>
+          <span class="table-avatar">${escapeHtml(initials(student.name))}</span>
           <span><strong>${escapeHtml(student.name)}</strong><small>${escapeHtml(student.instrument)}</small></span>
         </div>
       </td>
@@ -268,7 +279,7 @@ async function loadDashboard() {
         <span>${formatDateTime(session.scheduled_at)}</span>
         <strong>${escapeHtml(session.student_name)}</strong>
         <small>${escapeHtml(session.topic)} · ${escapeHtml(session.teacher_name)}</small>
-        <a class="row-action" href="${liveClassroomUrl(sessionRoomName(session), session.student_id)}" target="_blank" rel="noopener">Join Google Meet</a>
+        <a class="row-action" href="${escapeHtml(liveClassroomUrl(sessionRoomName(session), session.student_id))}" target="_blank" rel="noopener">Join Google Meet</a>
       </article>
     `).join("")
     : '<div class="empty-state">No upcoming sessions.</div>';
@@ -288,7 +299,7 @@ async function loadStudents() {
       <tr>
         <td>
           <div class="student-cell">
-            <span class="table-avatar">${initials(student.name)}</span>
+            <span class="table-avatar">${escapeHtml(initials(student.name))}</span>
             <span><strong>${escapeHtml(student.name)}</strong><small>${escapeHtml(student.instrument)}</small></span>
           </div>
         </td>
@@ -321,8 +332,8 @@ async function removeStudent(button) {
   if (!confirmed) return;
   button.disabled = true;
   try {
-    await api(`/api/students/${studentId}`, {
-      method: "DELETE",
+    await api(`/api/students/${studentId}/remove`, {
+      method: "POST",
       body: "{}"
     });
     adminStudents = [];
@@ -417,7 +428,7 @@ async function loadStaff() {
       <tr>
         <td>
           <div class="student-cell">
-            <span class="table-avatar">${initials(member.name)}</span>
+            <span class="table-avatar">${escapeHtml(initials(member.name))}</span>
             <span><strong>${escapeHtml(member.name)}</strong><small>${escapeHtml(member.email)}</small></span>
           </div>
         </td>
@@ -560,7 +571,7 @@ async function loadSessions() {
       <tr>
         <td>
           <div class="student-cell">
-            <span class="table-avatar">${initials(session.student_name)}</span>
+            <span class="table-avatar">${escapeHtml(initials(session.student_name))}</span>
             <span><strong>${escapeHtml(session.student_name)}</strong><small>${escapeHtml(session.instrument)}</small></span>
           </div>
         </td>
@@ -570,7 +581,7 @@ async function loadSessions() {
         <td><span class="status-pill ${session.status === "scheduled" || session.status === "attended" ? "green" : "amber"}">${escapeHtml(session.status)}</span></td>
         <td>
           <div class="session-actions">
-            <a class="row-action" href="${liveClassroomUrl(sessionRoomName(session), session.student_id)}" target="_blank" rel="noopener">Join Google Meet</a>
+            <a class="row-action" href="${escapeHtml(liveClassroomUrl(sessionRoomName(session), session.student_id))}" target="_blank" rel="noopener">Join Google Meet</a>
             ${adminUser?.role === "operations" ? "" : `<button class="row-action edit-session" data-session-id="${session.id}">Edit</button>`}
           </div>
         </td>
@@ -868,7 +879,7 @@ async function resetStaffPassword(event) {
 }
 
 function scoreBar(score) {
-  const value = Math.round(score || 0);
+  const value = Math.max(0, Math.min(100, Math.round(Number(score) || 0)));
   return `<div class="score-cell"><div class="mini-track"><span style="width:${value}%"></span></div><strong>${value}</strong></div>`;
 }
 
@@ -908,7 +919,7 @@ async function openStudent(studentId) {
   document.querySelector("#student-page-content").innerHTML = `
     <header class="student-modal-header">
       <div class="student-modal-heading">
-        <span class="table-avatar">${initials(student.name)}</span>
+        <span class="table-avatar">${escapeHtml(initials(student.name))}</span>
         <div>
           <h2>${escapeHtml(student.name)}</h2>
           <p>${escapeHtml(student.instrument)} · Week ${student.current_week} of 12 · Teacher ${escapeHtml(student.teacher_name)}</p>

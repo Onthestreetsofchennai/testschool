@@ -20,6 +20,29 @@
   --shadow: 0 20px 60px rgba(33, 27, 70, 0.09);
 }
 
+/* Keep the desktop operations menu usable without moving the page behind it. */
+@media (min-width: 761px) {
+  .admin-sidebar { overflow: hidden; }
+  .admin-sidebar > .admin-brand { flex: 0 0 auto; }
+  .admin-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-bottom: 14px;
+    padding-right: 5px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(245, 119, 161, 0.55) transparent;
+  }
+  .admin-nav::-webkit-scrollbar { width: 5px; }
+  .admin-nav::-webkit-scrollbar-track { background: transparent; }
+  .admin-nav::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(245, 119, 161, 0.55);
+  }
+  .admin-sidebar-footer { flex: 0 0 auto; }
+}
+
 * {
   box-sizing: border-box;
 }

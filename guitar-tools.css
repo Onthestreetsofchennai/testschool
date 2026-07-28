@@ -1,0 +1,376 @@
+.guitar-lab-view {
+  --lab-violet: #7657ff;
+  --lab-pink: #f577a1;
+  --lab-orange: #f0771e;
+  --lab-mint: #68f4cf;
+  --lab-panel: rgba(24, 19, 43, 0.86);
+}
+
+.guitar-lab-intro {
+  padding: 30px 32px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 90% 20%, rgba(104, 244, 207, 0.12), transparent 27%),
+    radial-gradient(circle at 12% 90%, rgba(240, 119, 30, 0.16), transparent 34%),
+    linear-gradient(135deg, rgba(42, 32, 70, 0.96), rgba(21, 17, 40, 0.94));
+  box-shadow: 0 25px 70px rgba(6, 4, 18, 0.28);
+}
+
+.guitar-lab-intro > div { max-width: 820px; }
+.guitar-lab-intro h1 { max-width: 780px; }
+
+.guitar-lab-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(104, 244, 207, 0.3);
+  border-radius: 999px;
+  background: rgba(104, 244, 207, 0.11);
+  color: #9effe4;
+  font-size: 0.8rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.guitar-lab-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(320px, 0.94fr);
+  gap: 22px;
+  margin-top: 22px;
+}
+
+.tuner-card,
+.chord-practice-card,
+.chord-library-panel {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.065), transparent 58%),
+    var(--lab-panel);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 22px 55px rgba(6, 4, 18, 0.24);
+}
+
+.tuner-card { min-width: 0; }
+.tuner-heading-row { align-items: start; }
+
+.tuner-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(244, 240, 255, 0.68);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.tuner-live-pill::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #837b98;
+  content: "";
+}
+
+.tuner-live-pill.is-live {
+  border-color: rgba(104, 244, 207, 0.3);
+  background: rgba(104, 244, 207, 0.1);
+  color: #9effe4;
+}
+
+.tuner-live-pill.is-live::before {
+  background: var(--lab-mint);
+  box-shadow: 0 0 12px rgba(104, 244, 207, 0.85);
+  animation: tuner-live-pulse 1.4s ease-in-out infinite;
+}
+
+.tuner-display {
+  position: relative;
+  display: grid;
+  min-height: 310px;
+  place-items: center;
+  margin: 20px 0 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 68%, rgba(118, 87, 255, 0.23), transparent 39%),
+    linear-gradient(180deg, rgba(8, 7, 20, 0.42), rgba(8, 7, 20, 0.74));
+}
+
+.tuner-display::after {
+  position: absolute;
+  right: 12%;
+  bottom: -42%;
+  width: 44%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(245, 119, 161, 0.15);
+  border-radius: 50%;
+  content: "";
+}
+
+.tuner-arc {
+  position: absolute;
+  top: 25px;
+  left: 50%;
+  width: min(390px, 84%);
+  height: 160px;
+  overflow: hidden;
+  border-top: 12px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50% 50% 0 0;
+  transform: translateX(-50%);
+}
+
+.tuner-arc::before {
+  position: absolute;
+  top: -12px;
+  left: 35%;
+  width: 30%;
+  height: 12px;
+  border-radius: 99px;
+  background: rgba(104, 244, 207, 0.4);
+  box-shadow: 0 0 22px rgba(104, 244, 207, 0.25);
+  content: "";
+}
+
+.tuner-tick {
+  position: absolute;
+  top: 18px;
+  color: rgba(244, 240, 255, 0.52);
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tick-flat { left: 2px; }
+.tick-centre { left: 50%; color: #a4ffe8; transform: translateX(-50%); }
+.tick-sharp { right: 2px; }
+
+.tuner-needle {
+  --tuner-cents: 0;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  z-index: 2;
+  width: 3px;
+  height: 112px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #fff, var(--lab-pink));
+  box-shadow: 0 0 18px rgba(245, 119, 161, 0.65);
+  transform: translateX(-50%) rotate(calc(var(--tuner-cents) * 0.8deg));
+  transform-origin: 50% 100%;
+  transition: transform 130ms ease-out, background 180ms ease;
+}
+
+.tuner-needle::after {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.72);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.tuner-note-wrap {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  align-self: end;
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.tuner-note {
+  display: grid;
+  width: 88px;
+  height: 88px;
+  place-items: center;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(240, 119, 30, 0.95), rgba(118, 87, 255, 0.94));
+  box-shadow: 0 18px 45px rgba(118, 87, 255, 0.35);
+  color: white;
+  font-size: 3rem;
+  font-weight: 950;
+}
+
+.tuner-note-wrap strong { color: #fff; font-size: 1rem; }
+.tuner-note-wrap small { margin-top: 4px; color: rgba(244, 240, 255, 0.58); }
+.tuner-display[data-state="in-tune"] .tuner-note { background: linear-gradient(145deg, #16d994, #5ae9d3); color: #081713; box-shadow: 0 18px 48px rgba(22, 217, 148, 0.35); }
+.tuner-display[data-state="in-tune"] .tuner-needle { background: #8effdf; box-shadow: 0 0 22px rgba(104, 244, 207, 0.9); }
+.tuner-display[data-state="error"] .tuner-note { background: linear-gradient(145deg, #cc4059, #f577a1); }
+
+.tuner-string-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tuner-string-row button {
+  display: grid;
+  min-width: 0;
+  min-height: 56px;
+  place-items: center;
+  gap: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(244, 240, 255, 0.68);
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.tuner-string-row button:hover,
+.tuner-string-row button:focus-visible,
+.tuner-string-row button.is-selected { border-color: rgba(245, 119, 161, 0.54); background: rgba(245, 119, 161, 0.12); color: #fff; transform: translateY(-2px); }
+.tuner-string-row button.is-detected { border-color: rgba(104, 244, 207, 0.55); background: rgba(104, 244, 207, 0.13); color: #a4ffe8; box-shadow: 0 0 20px rgba(104, 244, 207, 0.12); }
+.tuner-string-row strong { font-size: 1.1rem; }
+.tuner-string-row small { color: inherit; font-size: 0.62rem; }
+
+.tuner-status {
+  min-height: 45px;
+  margin: 14px 0 0;
+  color: rgba(244, 240, 255, 0.76);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.tuner-actions { display: grid; grid-template-columns: 1fr; margin-top: 8px; }
+.guitar-privacy-note { margin: 12px 0 0; color: rgba(244, 240, 255, 0.48); font-size: 0.72rem; line-height: 1.45; }
+
+.chord-practice-card {
+  display: grid;
+  align-content: start;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(118, 87, 255, 0.2), transparent 40%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.065), transparent 58%),
+    var(--lab-panel);
+}
+
+.chord-practice-card > div:first-child { text-align: center; }
+.chord-practice-card h2 { font-size: clamp(1.65rem, 3vw, 2.25rem); }
+.chord-practice-card > div:first-child p:last-child { max-width: 430px; margin: 8px auto 0; color: rgba(244, 240, 255, 0.64); }
+.featured-chord { display: grid; place-items: center; min-height: 330px; }
+
+.chord-diagram {
+  display: block;
+  width: 100%;
+  max-width: 210px;
+  height: auto;
+  overflow: visible;
+}
+
+.chord-diagram.is-featured { width: min(290px, 76%); max-width: 290px; filter: drop-shadow(0 22px 24px rgba(6, 4, 18, 0.42)); }
+.chord-grid-lines line { stroke: rgba(248, 245, 255, 0.8); stroke-width: 2.2; }
+.chord-grid-lines .chord-nut { stroke: #fff; stroke-width: 9; stroke-linecap: round; }
+.chord-open-marker { fill: #f7a33f; font: 900 17px/1 system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+.chord-open-circle { fill: none; stroke: #f7a33f; stroke-width: 4; }
+.chord-finger circle { fill: #f59a3d; stroke: rgba(255, 255, 255, 0.2); stroke-width: 2; }
+.chord-finger text { fill: #171126; font: 950 14px/1 system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+.chord-diagram-name { fill: #fff; font: 950 24px/1 system-ui, sans-serif; text-anchor: middle; }
+
+.chord-tip {
+  padding: 16px 18px;
+  border: 1px solid rgba(240, 119, 30, 0.2);
+  border-radius: 18px;
+  background: rgba(240, 119, 30, 0.08);
+}
+.chord-tip span { color: #ffb45f; font-size: 0.66rem; font-weight: 950; letter-spacing: 0.12em; text-transform: uppercase; }
+.chord-tip p { margin: 5px 0 0; color: rgba(248, 245, 255, 0.78); font-size: 0.82rem; line-height: 1.5; }
+
+.chord-library-panel { margin-top: 22px; }
+.chord-library-heading { align-items: end; gap: 18px; }
+.chord-library-heading p:last-child { max-width: 650px; margin-top: 6px; color: rgba(244, 240, 255, 0.58); }
+.chord-filters { display: flex; gap: 7px; padding: 5px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; background: rgba(255, 255, 255, 0.045); }
+.chord-filters button { min-height: 35px; padding: 0 13px; border: 0; border-radius: 10px; background: transparent; color: rgba(244, 240, 255, 0.58); font-size: 0.72rem; font-weight: 900; cursor: pointer; }
+.chord-filters button.is-active { background: linear-gradient(135deg, rgba(240, 119, 30, 0.9), rgba(245, 119, 161, 0.85)); color: #fff; }
+
+.chord-library-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.chord-card {
+  display: grid;
+  min-width: 0;
+  justify-items: center;
+  padding: 18px 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+  color: #fff;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.chord-card:hover,
+.chord-card:focus-visible { border-color: rgba(245, 119, 161, 0.38); background: rgba(245, 119, 161, 0.075); transform: translateY(-4px); }
+.chord-card.is-selected { border-color: rgba(104, 244, 207, 0.42); background: rgba(104, 244, 207, 0.06); box-shadow: 0 14px 35px rgba(104, 244, 207, 0.08); }
+.chord-card .chord-diagram { max-width: 145px; }
+.chord-card > span { display: grid; justify-items: center; gap: 3px; margin-top: 4px; }
+.chord-card > span strong { font-size: 0.9rem; }
+.chord-card > span small { color: rgba(244, 240, 255, 0.44); font-size: 0.64rem; letter-spacing: 0.08em; }
+
+@keyframes tuner-live-pulse {
+  50% { opacity: 0.45; transform: scale(0.78); }
+}
+
+@media (max-width: 1120px) {
+  .guitar-lab-grid { grid-template-columns: 1fr; }
+  .chord-practice-card { grid-template-columns: minmax(0, 0.82fr) minmax(280px, 1.18fr); align-items: center; gap: 20px; }
+  .chord-practice-card .chord-tip { grid-column: 1 / -1; }
+  .chord-library-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 780px) {
+  .bottom-nav { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .bottom-nav .nav-item span { font-size: 0.55rem; }
+  .guitar-lab-intro { padding: 24px 20px; border-radius: 24px; }
+  .guitar-lab-intro { align-items: start; }
+  .guitar-lab-badge { min-height: 34px; padding: 0 12px; font-size: 0.68rem; }
+  .guitar-lab-grid { gap: 14px; margin-top: 14px; }
+  .tuner-card,
+  .chord-practice-card,
+  .chord-library-panel { border-radius: 24px; }
+  .tuner-display { min-height: 280px; border-radius: 23px; }
+  .tuner-note { width: 76px; height: 76px; font-size: 2.5rem; }
+  .tuner-arc { top: 24px; height: 142px; }
+  .tuner-needle { height: 98px; }
+  .chord-practice-card { display: grid; grid-template-columns: 1fr; gap: 0; }
+  .featured-chord { min-height: 290px; }
+  .chord-library-heading { align-items: start; }
+  .chord-filters { width: 100%; }
+  .chord-filters button { flex: 1; }
+  .chord-library-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .chord-card { padding: 13px 7px 12px; border-radius: 18px; }
+  .chord-card .chord-diagram { max-width: 130px; }
+}
+
+@media (max-width: 390px) {
+  .bottom-nav .nav-item { min-height: 52px; }
+  .bottom-nav .nav-item svg { width: 18px; height: 18px; }
+  .bottom-nav .nav-item span { font-size: 0.5rem; }
+  .tuner-string-row { gap: 5px; }
+  .tuner-string-row button { min-height: 50px; border-radius: 12px; }
+  .chord-card .chord-diagram { max-width: 118px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tuner-live-pill.is-live::before { animation: none; }
+  .tuner-needle,
+  .chord-card,
+  .tuner-string-row button { transition: none; }
+}

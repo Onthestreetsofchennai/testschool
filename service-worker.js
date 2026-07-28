@@ -1,9 +1,11 @@
-const CACHE_NAME = "the-ots-music-school-v49-practice-calendar";
+const CACHE_NAME = "the-ots-music-school-v52-guitar-lab";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./guitar-tools.css",
+  "./guitar-tools.js",
   "./guitar-companion.css",
   "./guitar-companion.js",
   "./guitar-duo-sad-intro.png",

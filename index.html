@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: https://drive.google.com https://docs.google.com https://*.googleusercontent.com; connect-src 'self' https://music-school-ots.sharoncornerstone56.workers.dev https://school.onthestreets.in; frame-src https://meet.google.com https://drive.google.com https://docs.google.com; worker-src 'self'; manifest-src 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="theme-color" content="#111426">
   <meta name="description" content="THE OTS MUSIC SCHOOL guided music learning app">
   <title>THE OTS MUSIC SCHOOL</title>
@@ -12,6 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=37">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="guitar-tools.css">
   <link rel="stylesheet" href="guitar-companion.css">
 </head>
 <body>
@@ -101,6 +103,10 @@
         <button class="nav-item" data-view="course">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V5a1 1 0 0 1 1-1Zm2 12h9V7H7a1 1 0 0 0-1 1v8.17A3 3 0 0 1 7 16Z"/></svg>
           <span>Course</span>
+        </button>
+        <button class="nav-item" data-view="guitar-lab">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v5a5 5 0 0 0 4 4.9V21h2v-8.1A5 5 0 0 0 17 8V3h-2v5a3 3 0 0 1-2 2.83V3h-2v7.83A3 3 0 0 1 9 8V3Z"/></svg>
+          <span>Guitar Lab</span>
         </button>
         <button class="nav-item" data-view="checkin">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h11a2 2 0 0 1 2 2v1l4-2v10l-4-2v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm2 6 2.5 2.5L14 9l-1.5-1.5-4 4-1-1Z"/></svg>
@@ -433,6 +439,88 @@
           <div class="week-list" id="week-list"></div>
         </section>
 
+        <section class="view guitar-lab-view" id="view-guitar-lab" data-title="Guitar tuner and chords">
+          <div class="page-intro guitar-lab-intro">
+            <div>
+              <p class="eyebrow">GUITAR LAB</p>
+              <h1>Tune up. Shape the chord. Start playing.</h1>
+              <p>Use the microphone tuner for standard E-A-D-G-B-E tuning, then open a chord card to practise accurate finger placement.</p>
+            </div>
+            <span class="guitar-lab-badge">Beginner tools</span>
+          </div>
+
+          <div class="guitar-lab-grid">
+            <section class="panel tuner-card" aria-labelledby="tuner-heading">
+              <div class="section-heading tuner-heading-row">
+                <div>
+                  <p class="eyebrow">LIVE TUNER</p>
+                  <h2 id="tuner-heading">Standard tuning</h2>
+                </div>
+                <span class="tuner-live-pill" id="tuner-live-pill">Mic off</span>
+              </div>
+
+              <div class="tuner-display" id="tuner-display" data-state="idle">
+                <div class="tuner-arc" aria-hidden="true">
+                  <span class="tuner-tick tick-flat">Flat</span>
+                  <span class="tuner-tick tick-centre">In tune</span>
+                  <span class="tuner-tick tick-sharp">Sharp</span>
+                  <span class="tuner-needle" id="tuner-needle"></span>
+                </div>
+                <div class="tuner-note-wrap">
+                  <span class="tuner-note" id="tuner-note">--</span>
+                  <strong id="tuner-string-name">Play one open string</strong>
+                  <small id="tuner-frequency">Waiting for microphone</small>
+                </div>
+              </div>
+
+              <div class="tuner-string-row" id="tuner-string-row" aria-label="Standard guitar strings">
+                <button type="button" data-tuner-string="E2"><strong>E</strong><small>6</small></button>
+                <button type="button" data-tuner-string="A2"><strong>A</strong><small>5</small></button>
+                <button type="button" data-tuner-string="D3"><strong>D</strong><small>4</small></button>
+                <button type="button" data-tuner-string="G3"><strong>G</strong><small>3</small></button>
+                <button type="button" data-tuner-string="B3"><strong>B</strong><small>2</small></button>
+                <button type="button" data-tuner-string="E4"><strong>E</strong><small>1</small></button>
+              </div>
+
+              <p class="tuner-status" id="tuner-status" role="status" aria-live="polite">Tap start, allow microphone access, then pluck one string at a time.</p>
+              <div class="tuner-actions">
+                <button class="button button-primary" id="start-guitar-tuner" type="button">Start tuning</button>
+                <button class="button button-secondary" id="stop-guitar-tuner" type="button" hidden>Stop tuner</button>
+              </div>
+              <p class="guitar-privacy-note">Your sound is analysed only in this browser. It is not recorded, saved or uploaded.</p>
+            </section>
+
+            <section class="panel chord-practice-card" aria-labelledby="chord-practice-heading">
+              <div>
+                <p class="eyebrow">CHORD OF THE MOMENT</p>
+                <h2 id="chord-practice-heading">C major</h2>
+                <p id="chord-practice-copy">Curve your fingers and let every open string ring clearly.</p>
+              </div>
+              <div class="featured-chord" id="featured-chord"></div>
+              <div class="chord-tip" id="chord-tip">
+                <span>Teacher tip</span>
+                <p>Play each string slowly. Adjust only the finger touching a muted string.</p>
+              </div>
+            </section>
+          </div>
+
+          <section class="panel chord-library-panel">
+            <div class="section-heading chord-library-heading">
+              <div>
+                <p class="eyebrow">OPEN CHORD LIBRARY</p>
+                <h2>Eight shapes every beginner needs</h2>
+                <p>Tap a chord to enlarge it. X means mute the string, O means play it open.</p>
+              </div>
+              <div class="chord-filters" role="group" aria-label="Filter chord library">
+                <button class="is-active" type="button" data-chord-filter="all">All</button>
+                <button type="button" data-chord-filter="major">Major</button>
+                <button type="button" data-chord-filter="minor">Minor</button>
+              </div>
+            </div>
+            <div class="chord-library-grid" id="chord-library-grid"></div>
+          </section>
+        </section>
+
         <section class="view" id="view-checkin" data-title="Daily practice check-in">
           <div class="page-intro">
             <div>
@@ -630,6 +718,10 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V5a1 1 0 0 1 1-1Zm2 12h9V7H7a1 1 0 0 0-1 1v8.17A3 3 0 0 1 7 16Z"/></svg>
         <span>Course</span>
       </button>
+      <button class="nav-item" data-view="guitar-lab">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v5a5 5 0 0 0 4 4.9V21h2v-8.1A5 5 0 0 0 17 8V3h-2v5a3 3 0 0 1-2 2.83V3h-2v7.83A3 3 0 0 1 9 8V3Z"/></svg>
+        <span>Tools</span>
+      </button>
       <button class="nav-item" data-view="checkin">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h11a2 2 0 0 1 2 2v1l4-2v10l-4-2v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm2 6 2.5 2.5L14 9l-1.5-1.5-4 4-1-1Z"/></svg>
         <span>Check-in</span>
@@ -738,6 +830,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="guitar-companion.js"></script>
-  <script src="app.js"></script>
+  <script src="guitar-tools.js"></script>
+  <script src="app.js?v=50"></script>
 </body>
 </html>
